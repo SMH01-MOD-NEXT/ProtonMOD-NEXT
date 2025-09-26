@@ -1,7 +1,7 @@
 # ProtonMOD‑Next for Android
 
 Based on [ProtonVPN Android](https://github.com/ProtonVPN/android-app)  
-© 2025 Smali — Community modification under GPLv3
+© 2025 SMH01 — Community modification under GPLv3
 
 ---
 
@@ -56,7 +56,7 @@ Clone the repository and build with Gradle:
 
 ```bash
 ./gradlew assembleProductionVanillaOpenSourceDebug
----
+```
 ### Android Studio
 
 1. Open **Android Studio** (latest stable version recommended).  
