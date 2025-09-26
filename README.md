@@ -1,76 +1,95 @@
-# ProtonVPN for Android
+# ProtonMOD‑Next for Android
 
-Copyright (c) 2019 Proton AG
+Based on [ProtonVPN Android](https://github.com/ProtonVPN/android-app)  
+© 2025 Smali — Community modification under GPLv3
 
-## Download
+---
+
+## Overview
+
+**ProtonMOD‑Next** is an **actively developed experimental branch** of the ProtonVPN Android client.  
+It is designed for regions with heavy network restrictions and introduces:
+
+- Transparent **VLESS proxy integration** (via Xray)
+- **Suppression of GuestHole** (pre‑login VPN tunnel)
+- **Suppression of Auto‑connect on process restore**
+- Retained **certificate pinning** for full end‑to‑end security
+
+New features are being added **gradually** as development continues.
+
+---
+
+## Screenshots
 
 <p align="center">
-    <img src="https://raw.githubusercontent.com/ProtonVPN/android-app/master/metadata/en-US/images/phoneScreenshots/2.jpg" height="400">
-    <img src="https://raw.githubusercontent.com/ProtonVPN/android-app/master/metadata/en-US/images/phoneScreenshots/3.jpg" height="400">
-    <img src="https://raw.githubusercontent.com/ProtonVPN/android-app/master/metadata/en-US/images/phoneScreenshots/4.jpg" height="400">
-    <img src="https://raw.githubusercontent.com/ProtonVPN/android-app/master/metadata/en-US/images/phoneScreenshots/5.jpg" height="400">
+  <img src="https://play-lh.googleusercontent.com/3aQ3...example1" width="250" alt="Main screen"/>
+  <img src="https://play-lh.googleusercontent.com/3aQ3...example2" width="250" alt="Connection screen"/>
+  <img src="https://play-lh.googleusercontent.com/3aQ3...example3" width="250" alt="Settings"/>
 </p>
 
-<p align="center">
-    <a href="https://play.google.com/store/apps/details?id=ch.protonvpn.android">
-        <img src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png" alt="Get it on Google Play" height="80">
-    </a>
-    <a href="https://f-droid.org/packages/ch.protonvpn.android">
-        <img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80">
-    </a>
-    <a href="https://github.com/ProtonVPN/android-app/releases">
-        <img src="https://i.postimg.cc/kXfbyWjL/get-it-on-github.png" alt="Get it on GitHub" height="80">
-    </a>
-</p>
+*(Screenshots from the ProtonVPN Android app — ProtonMOD‑Next UI remains identical, but with modified internals.)*
 
-## Build instructions
-- Install sdk, ndk, cmake, swig
-- Clone this repository
-- `./gradlew assembleProductionVanillaOpenSourceDebug` or open and build in Android Studio
+---
 
-### Build release
-To complete a release build signing keys need to be provided:
-- `./gradlew assembleProductionVanillaOpenSourceRelease -PkeyStoreFilePath=<keystore> -PkeyStoreKeyAlias=<alias> -PkeyStorePassword=<pass> -PkeyStoreKeyPassword=<key-pass>`
+## Key Modifications
 
-## Code style
-Project uses agreed code style ProtonStyle.xml for java. Import it in Android studio via ```File>>Settings>>Editor>>Code style>>Import Scheme```
-For kotlin's code style we use ktlint with default rules
+- **VLESS Proxy Integration**  
+  Proton API traffic (login, IP retrieval, account checks) is routed through a local VLESS proxy (Xray).  
+  Implemented via a custom `ProxySelector` that applies only to Proton API hosts.
 
-## Contributing
-If you would like to contribute, please keep in mind the following rules:
-- Try to stick to the project's existing code style and naming conventions
-- The code base is mostly written in Java, but we are transitioning to Kotlin, so new code should be written in Kotlin where possible
-- Our preferred tech stack is Kotlin, MVVM, data-binding and coroutines, so any new features or large refactors should conform to this preferred tech stack
-- After adding/updating open source dependencies run `gradlew updateLicensesJson` to update attributions.
+- **GuestHole Disabled**  
+  The built‑in GuestHole mechanism (pre‑login VPN tunnel) has been suppressed.  
+  This avoids unnecessary VPN attempts in blocked regions.
 
-Internally our CI automatically checks all pull requests for code style issues, and runs our tests. However you can run those locally as well.
-```
-gradlew checkstyle
-gradlew detekt
-gradlew test
-gradlew androidTest
-```
+- **Auto‑Connect Suppression**  
+  Automatic VPN connection on process restore (`ConnectTrigger.Auto`) has been disabled.  
+  This prevents unwanted VPN sessions before login.
 
-By making a contribution to this project you agree to the following:
+- **Security Preserved**  
+  TLS certificate pinning remains intact. Proton servers are still verified against their original pinned certificates.
 
-1. I assign any and all copyright related to the contribution to Proton AG;
-2. I certify that the contribution was created in whole by me;
-3. I understand and agree that this project and the contribution are public and that a record of the contribution (including all personal information I submit with it) is maintained indefinitely and may be redistributed with this project or the open source license(s) involved.
+---
 
-## Signature
+## Build Instructions
 
-All our builds (except for F-droid) will be signed with same key.
-SHA256 fingerprint for signing certificate
-```
-ch.protonvpn.android
-DC:C9:43:9E:C1:A6:C6:A8:D0:20:3F:34:23:EE:42:BC:C8:B9:70:62:8E:53:CB:73:A0:39:3F:39:8D:D5:B8:53
-```
+Clone the repository and build with Gradle:
 
-## Versioning
-- Version matches format: `[major][minor][patch][hotfix]`
+```bash
+./gradlew assembleProductionVanillaOpenSourceDebug
+---
+### Android Studio
 
-## License
+1. Open **Android Studio** (latest stable version recommended).  
+2. Select **File → Open…** and choose the root folder of this repository.  
+3. Let Gradle sync the project (first sync may take a few minutes).  
+4. In the toolbar, select the build variant:  
+   - `productionVanillaOpenSourceDebug` for development builds  
+   - `productionVanillaOpenSourceRelease` for release builds  
+5. Press **Run ▶** to install on a connected device or emulator.  
 
-The code and datafiles in this distribution are licensed under the terms of the GPLv3 as published by the Free Software Foundation. See <https://www.gnu.org/licenses/> for a copy of this license.
+You can also use **Build → Build Bundle(s) / APK(s)** to generate APKs directly from the IDE.
 
-Copyright (c) 2019 Proton AG
+---
+
+## Development Status
+
+🚧 **Active Development**  
+This project is under continuous development.  
+New features and improvements are added step by step, with a focus on:
+
+- Proxy integration refinements  
+- Build system optimizations  
+- Documentation and reproducibility  
+
+---
+
+## Roadmap
+
+- [x] Integrate VLESS proxy into Proton API requests  
+- [x] Suppress GuestHole (pre‑login VPN tunnel)  
+- [x] Suppress Auto‑connect on process restore  
+- [ ] UI integration during login  
+- [ ] Disable proxy when not required  
+
+*(More items will be added as development progresses.)*
+
