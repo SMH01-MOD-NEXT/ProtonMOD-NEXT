@@ -178,84 +178,28 @@ class GuestHole @Inject constructor(
         }
     }
 
-    private suspend fun unblock(backendCall: (suspend () -> Unit)?, reason: String) {
-        logMessage("Opening Guest Hole: $reason")
-        if (!vpnMonitor.isDisabled || guestHoleSuppressor.disableGh()) {
-            val ignoreReason = if (guestHoleSuppressor.disableGh()) "suppressed" else "VPN connected"
-            logMessage("Ignoring Guest Hole: $ignoreReason")
-            return
-        }
-        coroutineScope {
-            job = launch {
-                // Do not execute guesthole for calls running in background, due to inability to call permission intent
-                val currentActivity =
-                    foregroundActivityTracker.foregroundActivity as? ComponentActivity ?: return@launch
-                val delegate = GuestHoleVpnUiDelegate(currentActivity)
-                val intent = vpnPermissionDelegate.prepareVpnPermission()
-
-                // Ask for permissions and if granted execute original method and return it back to core
-                if (currentActivity.suspendForPermissions(intent)) {
-                    withTimeoutOrNull(GUEST_HOLE_ATTEMPT_TIMEOUT) {
-                        unblockWithPermission(delegate, backendCall)
-                    }
-                } else {
-                    guestHoleLocks.clear()
-                    logMessage("Missing permissions")
-                }
-            }
-            job?.join()
-        }
+    private suspend fun unblock(
+        backendCall: (suspend () -> Unit)?,
+        reason: String
+    ) {
+        logMessage("Guest Hole suppressed: $reason")
+        // Просто очищаем замки и выходим
+        guestHoleLocks.clear()
+        waitingForUnblock = false
+        job = null
     }
 
     private suspend fun unblockWithPermission(
         delegate: VpnUiActivityDelegate,
         backendCall: (suspend () -> Unit)?
     ) {
+        logMessage("Guest Hole suppressed: unblockWithPermission skipped")
+        // Ничего не делаем, сразу очищаем состояние
+        guestHoleLocks.clear()
+        waitingForUnblock = false
         timeoutCloseJob?.cancel()
-        waitingForUnblock = backendCall != null
-        val userActionJob = scope.launch {
-            merge(vpnMonitor.onDisconnectedByUser, vpnMonitor.onDisconnectedByReconnection).collect {
-                job?.let {
-                    logMessage("Guesthole canceled due to user action")
-                    it.cancelAndJoin()
-                }
-            }
-        }
-        try {
-            notificationHelper.showInformationNotification(
-                R.string.guestHoleNotificationContent,
-                notificationId = Constants.NOTIFICATION_GUESTHOLE_ID
-            )
-            getGuestHoleServers().any { server ->
-                executeConnected(delegate, server) {
-                    // Add slight delay before retrying original call to avoid network timeout right after connection
-                    delay(EXECUTE_CALL_DELAY_MS)
-                    appFeaturesPrefs.lastSuccessfulGuestHoleServerId = server.serverId
-                    backendCall?.invoke()
-                    logMessage("Successful unblock")
-                }
-            }
-        } finally {
-            // This needs to run even when coroutine was cancelled
-            withContext(NonCancellable) {
-                waitingForUnblock = false
-                if (!(isGuestHoleActive && vpnMonitor.isConnected)) {
-                    // If Guest Hole failed don't start it for next call
-                    guestHoleLocks.clear()
-                }
-                if (!guestHoleLocks.locked()) {
-                    closeGuestHole()
-                } else {
-                    timeoutCloseJob?.cancel()
-                    timeoutCloseJob = scope.launch {
-                        delay(TIMEOUT_CLOSE_MS)
-                        closeGuestHole()
-                    }
-                }
-                userActionJob.cancel()
-            }
-        }
     }
+
 
     private suspend fun closeGuestHole() {
         if (isGuestHoleActive) {

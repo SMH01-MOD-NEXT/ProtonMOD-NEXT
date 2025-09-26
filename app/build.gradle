@@ -382,6 +382,7 @@ android {
         main.res.srcDirs += 'src/main/res_flags'
         main {
            assets.srcDirs = ['src/main/assets', 'assets', 'ovpnlibs/assets', '../openvpn/build/ovpnassets']
+            jniLibs.srcDirs = ['src/main/jniLibs']
         }
         // Screenshot test does not automatically include app resources. Check if it's still needed when updating screenshot test module.
         screenshotTest.res.srcDirs += 'src/main/res'

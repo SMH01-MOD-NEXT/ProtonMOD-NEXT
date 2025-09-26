@@ -70,7 +70,10 @@ import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import java.io.File
+import java.net.InetSocketAddress
+import java.net.Proxy
 import javax.inject.Singleton
+import com.protonvpn.android.proxy.VlessManager
 
 private const val OKHTTP_CACHE_SIZE = 10L * 1024L * 1024L // 10 MiB
 
@@ -182,10 +185,16 @@ public class CoreBaseNetworkModule {
     @Provides
     @Singleton
     @SharedOkHttpClient
-    internal fun provideOkHttpClient(vpnDns: VpnDns): OkHttpClient =
-        OkHttpClient().newBuilder()
+    internal fun provideOkHttpClient(vpnDns: VpnDns): OkHttpClient {
+        val proxy = Proxy(
+            Proxy.Type.SOCKS,
+            InetSocketAddress("127.0.0.1", VlessManager.PROXY_PORT)
+        )
+        return OkHttpClient.Builder()
             .dns(vpnDns)
+            .proxy(proxy)
             .build()
+    }
 
     @Provides
     @Singleton
