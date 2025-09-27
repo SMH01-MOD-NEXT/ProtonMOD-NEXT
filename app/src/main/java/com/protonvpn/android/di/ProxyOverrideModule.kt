@@ -1,11 +1,13 @@
 package com.protonvpn.android.di
 
+import android.content.Context
 import android.util.Log
 import com.protonvpn.android.proxy.VlessManager
 import com.protonvpn.android.vpn.VpnDns
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import me.proton.core.network.data.ProtonCookieStore
 import me.proton.core.network.domain.ApiClient
@@ -15,18 +17,24 @@ import java.io.IOException
 import java.net.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
+import me.proton.core.network.data.di.SharedOkHttpClient
+import java.io.File
+
 
 // Внутренний ProxySelector, который решает — через SOCKS или напрямую
 class VlessProxySelector(
-    private val vlessManager: VlessManager
+    private val vlessManager: VlessManager,
+    private val context: Context
 ) : ProxySelector() {
 
-    private val proxiedHosts = setOf("vpn-api.proton.me")
 
     override fun select(uri: URI?): List<Proxy> {
+        Log.d("VlessProxySelector", "select() called for $uri")
         val host = uri?.host ?: return listOf(Proxy.NO_PROXY)
+        val prefs = context.getSharedPreferences("protonmod_prefs", Context.MODE_PRIVATE)
+        val enabled = prefs.getBoolean("proxy_enabled", false)
 
-        return if (vlessManager.isReady() && proxiedHosts.contains(host)) {
+        return if (enabled) {
             Log.d("VlessProxySelector", "Using SOCKS proxy for host: $host")
             listOf(
                 Proxy(
@@ -47,19 +55,32 @@ class VlessProxySelector(
 
 @Module
 @InstallIn(SingletonComponent::class)
+object OkHttpCacheModule {
+    @Provides
+    @Singleton
+    fun provideOkHttpCache(@ApplicationContext context: Context): Cache {
+        val cacheDir = File(context.cacheDir, "http_cache")
+        return Cache(cacheDir, 50L * 1024L * 1024L) // 50 MB
+    }
+}
+
+
+@Module
+@InstallIn(SingletonComponent::class)
 object ProxyOverrideModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(
-        original: dagger.Lazy<OkHttpClient>,
+    @SharedOkHttpClient
+    fun provideSharedOkHttpClient(
         vpnDns: VpnDns,
         apiClient: ApiClient,
         cookieStore: ProtonCookieStore,
         cache: dagger.Lazy<Cache>,
-        vlessManager: VlessManager
+        vlessManager: VlessManager,
+        @ApplicationContext context: Context
     ): OkHttpClient {
-        return original.get().newBuilder()
+        return OkHttpClient.Builder()
             .dns(vpnDns)
             .cache(cache.get())
             .callTimeout(apiClient.callTimeoutSeconds, TimeUnit.SECONDS)
@@ -67,7 +88,7 @@ object ProxyOverrideModule {
             .writeTimeout(apiClient.writeTimeoutSeconds, TimeUnit.SECONDS)
             .readTimeout(apiClient.readTimeoutSeconds, TimeUnit.SECONDS)
             .cookieJar(cookieStore)
-            .proxySelector(VlessProxySelector(vlessManager)) // 👈 точечное проксирование
+            .proxySelector(VlessProxySelector(vlessManager, context))
             .build()
     }
 }

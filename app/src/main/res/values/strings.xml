@@ -53,6 +53,7 @@
     <string name="cancel">Cancel</string>
     <string name="close">Close</string>
     <string name="drawerReportProblem">Report an issue</string>
+    <string name="proxy_toggle">Use proxy</string>
     <string name="drawerSignOut">@string/menuActionSignOut</string>
     <string name="action_share">Share</string>
     <string name="accountFree">Proton Free</string>

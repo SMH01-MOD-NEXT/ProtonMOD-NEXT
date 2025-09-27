@@ -19,8 +19,10 @@
 
 package com.protonvpn.android.redesign.home_screen.ui
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Box
@@ -70,6 +72,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.protonvpn.android.ProtonApplicationHilt
 import com.protonvpn.android.R
 import com.protonvpn.android.base.ui.SimpleModalBottomSheet
 import com.protonvpn.android.netshield.NetShieldActions
@@ -255,6 +258,18 @@ fun HomeRoute(
 
     if (fullyDrawn) {
         LaunchedEffect(key1 = Unit) {
+            val prefs = context.getSharedPreferences("protonmod_prefs", Context.MODE_PRIVATE)
+            if (prefs.getBoolean("proxy_enabled", false)) {
+                prefs.edit().putBoolean("proxy_enabled", false).apply()
+
+                // сбросить пул соединений, чтобы новые запросы пошли напрямую
+                val app = (context.applicationContext as ProtonApplicationHilt)
+                app.appScope.launch {
+                    app.okHttpClient.connectionPool.evictAll()
+                }
+
+                Log.d("ProxyToggle", "Proxy disabled automatically on Home screen")
+            }
             (context as Activity).reportFullyDrawn()
         }
     }
@@ -265,6 +280,7 @@ private val ListBgGradientOffsetBasic = ListBgGradientHeightBasic - 32.dp
 private val ListBgGradientHeightExpanded = 200.dp
 private val PromoOfferBannerState?.peekOffset get() = if (this?.isDismissible == true) 60.dp else 44.dp
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun HomeView(

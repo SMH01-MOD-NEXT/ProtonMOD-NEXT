@@ -79,7 +79,6 @@ import kotlinx.coroutines.launch
 import me.proton.core.compose.component.ProtonCenteredProgress
 import me.proton.core.notification.presentation.deeplink.HandleDeeplinkIntent
 import javax.inject.Inject
-import com.protonvpn.android.proxy.VlessManager
 
 private const val GLANCE_ACTION_SCHEME = "glance-action"
 
@@ -113,8 +112,6 @@ class MainActivity : VpnUiDelegateProvider, AppCompatActivity() {
         retryConnectionAfterPermissions(it)
     }
 
-    private val vlessManager: VlessManager by lazy { VlessManager.getInstance(this) }
-
     private val helper = object : MainActivityHelper(this) {
 
         override suspend fun onLoginNeeded() {
@@ -133,7 +130,6 @@ class MainActivity : VpnUiDelegateProvider, AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         lifecycleScope.launch {
-            vlessManager.start()
         }
 
         if (isTv()) {

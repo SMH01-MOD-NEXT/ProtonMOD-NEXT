@@ -291,7 +291,7 @@ class VlessManager private constructor(private val context: Context) {
     companion object {
         private const val TAG = "VLESS_MANAGER"
         private const val XRAY_BINARY_NAME = "libxray.so"
-        private const val GITHUB_CONFIG_URL = "https://raw.githubusercontent.com/Smali-PG3D/protonnext-vless/refs/heads/main/vless.txt"
+        private const val GITHUB_CONFIG_URL = "https://raw.githubusercontent.com/SMH01-MOD-NEXT/mod-next-proxy/refs/heads/main/vless.txt"
         private const val PING_TIMEOUT_MS = 2000
         const val PROXY_PORT = 10808
 

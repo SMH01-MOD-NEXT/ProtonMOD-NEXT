@@ -18,6 +18,7 @@
  */
 package com.protonvpn.android
 
+import android.R.attr.button
 import android.app.Application
 import android.app.ApplicationExitInfo
 import android.content.Context
@@ -85,6 +86,19 @@ import me.proton.core.userrecovery.presentation.compose.DeviceRecoveryHandler
 import me.proton.core.userrecovery.presentation.compose.DeviceRecoveryNotificationSetup
 import me.proton.core.util.kotlin.CoreLogger
 import java.util.concurrent.Executors
+import android.app.Activity
+import android.content.res.ColorStateList
+import android.os.Bundle
+import android.view.View
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
+import com.protonvpn.android.profiles.data.ProfileAutoOpen
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+
 
 /**
  * Base Application for both the real application and application for use in instrumented tests.
@@ -164,6 +178,84 @@ open class ProtonApplication : Application() {
 
             CoreLogger.set(VpnCoreLogger())
         }
+
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+                if (activity is FragmentActivity) {
+                    activity.supportFragmentManager.registerFragmentLifecycleCallbacks(
+                        object : FragmentManager.FragmentLifecycleCallbacks() {
+                            override fun onFragmentViewCreated(
+                                fm: FragmentManager,
+                                f: Fragment,
+                                v: View,
+                                savedInstanceState: Bundle?
+                            ) {
+                                val button = v.findViewById<me.proton.core.presentation.ui.view.ProtonButton>(
+                                    R.id.btnProxyToggle
+                                ) ?: return
+
+                                val prefs = activity.getSharedPreferences("protonmod_prefs", Context.MODE_PRIVATE)
+
+                                fun updateStyle(enabled: Boolean) {
+                                    button.text = if (enabled) "Прокси включён" else "Использовать прокси"
+                                    if (enabled) {
+                                        button.backgroundTintList = ColorStateList.valueOf(
+                                            ContextCompat.getColor(activity, com.google.android.material.R.color.material_dynamic_primary50)
+                                        )
+                                        button.setTextColor(ContextCompat.getColor(activity, android.R.color.white))
+                                    } else {
+                                        button.backgroundTintList = ColorStateList.valueOf(
+                                            ContextCompat.getColor(activity, com.google.android.material.R.color.material_dynamic_neutral90)
+                                        )
+                                        button.setTextColor(ContextCompat.getColor(activity, android.R.color.black))
+                                    }
+                                }
+
+                                updateStyle(prefs.getBoolean("proxy_enabled", false))
+
+                                button.setOnClickListener {
+                                    val newState = !prefs.getBoolean("proxy_enabled", false)
+                                    prefs.edit().putBoolean("proxy_enabled", newState).apply()
+                                    updateStyle(newState)
+
+                                    val app = activity.application as ProtonApplicationHilt
+
+                                    if (newState) {
+                                        GlobalScope.launch {
+                                            app.vlessManager.start()
+                                        }
+                                    } else {
+                                        app.appScope.launch(Dispatchers.IO) {
+                                            app.okHttpClient.connectionPool.evictAll()
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        true
+                    )
+                }
+            }
+
+            override fun onActivityStarted(activity: Activity) {}
+            override fun onActivityResumed(activity: Activity) {}
+            override fun onActivityPaused(activity: Activity) {}
+            override fun onActivityStopped(activity: Activity) {}
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+            override fun onActivityDestroyed(activity: Activity) {}
+        })
+
+    if (isMainProcess()) {
+            initLogger()
+            ProtonLogger.log(AppProcessStart, "version: " + BuildConfig.VERSION_NAME)
+
+            initNotificationChannel(this)
+
+            // Initialize go-libraries early
+            Seq.touch()
+
+            CoreLogger.set(VpnCoreLogger())
+        }
     }
 
     fun initDependencies() {
@@ -225,10 +317,15 @@ open class ProtonApplication : Application() {
         }
     }
 
+
+
+
+
     private fun initPreferences() {
         val storagePrefsName = "Storage"
         migrateProtonPreferences(this, "Proton-Secured", storagePrefsName)
         val preferences = getSharedPreferences(storagePrefsName, MODE_PRIVATE)
+        Storage.setPreferences(preferences)
         Storage.setPreferences(preferences)
     }
 

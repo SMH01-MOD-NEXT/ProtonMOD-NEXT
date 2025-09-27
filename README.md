@@ -22,9 +22,9 @@ New features are being added **gradually** as development continues.
 ## Screenshots
 
 <p align="center">
-  <img src="https://play-lh.googleusercontent.com/3aQ3...example1" width="250" alt="Main screen"/>
-  <img src="https://play-lh.googleusercontent.com/3aQ3...example2" width="250" alt="Connection screen"/>
-  <img src="https://play-lh.googleusercontent.com/3aQ3...example3" width="250" alt="Settings"/>
+  <img src="https://raw.githubusercontent.com/ProtonVPN/android-app/master/metadata/en-US/images/phoneScreenshots/2.jpg" width="250" alt="Connection screen"/>
+  <img src="https://raw.githubusercontent.com/ProtonVPN/android-app/master/metadata/en-US/images/phoneScreenshots/3.jpg" width="250" alt="Country Screen"/>
+  <img src="https://raw.githubusercontent.com/ProtonVPN/android-app/master/metadata/en-US/images/phoneScreenshots/4.jpg" width="250" alt="Connection"/>
 </p>
 
 *(Screenshots from the ProtonVPN Android app — ProtonMOD‑Next UI remains identical, but with modified internals.)*
@@ -86,10 +86,9 @@ New features and improvements are added step by step, with a focus on:
 ## Roadmap
 
 - [x] Integrate VLESS proxy into Proton API requests  
-- [x] Suppress GuestHole (pre‑login VPN tunnel)  
-- [x] Suppress Auto‑connect on process restore  
-- [ ] UI integration during login  
-- [ ] Disable proxy when not required  
+- [x] Suppress GuestHole (pre‑login VPN tunnel)
+- [x] UI integration during login  
+- [x] Disable proxy when not required  
 
 *(More items will be added as development progresses.)*
 

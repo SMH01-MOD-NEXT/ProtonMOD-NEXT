@@ -184,15 +184,9 @@ public interface CoreNetworkBindsModule {
 public class CoreBaseNetworkModule {
     @Provides
     @Singleton
-    @SharedOkHttpClient
     internal fun provideOkHttpClient(vpnDns: VpnDns): OkHttpClient {
-        val proxy = Proxy(
-            Proxy.Type.SOCKS,
-            InetSocketAddress("127.0.0.1", VlessManager.PROXY_PORT)
-        )
         return OkHttpClient.Builder()
             .dns(vpnDns)
-            .proxy(proxy)
             .build()
     }
 
