@@ -68,7 +68,7 @@ data class Server(
 ) : java.io.Serializable {
 
     @Transient
-    val online: Boolean = isOnline && connectingDomains.any { it.isOnline }
+    val online: Boolean = isFreeServer && isOnline && connectingDomains.any { it.isOnline }
 
     val isTor get() = features.hasFlag(SERVER_FEATURE_TOR)
 

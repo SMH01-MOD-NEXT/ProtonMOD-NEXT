@@ -160,7 +160,7 @@ class ServerListViewModelDataAdapterLegacy @Inject constructor(
         val includeFreeServers = gatewayName != null || forceIncludeGateways
         return asSequence().filter { server ->
             // We shouldn't show free servers on the list
-            (includeFreeServers || !server.isFreeServer) &&
+            (includeFreeServers || !server.isPlusServer) &&
                 filter.isMatching(server) &&
                 (country == null || country.countryCode == server.exitCountry) &&
                 (cityStateId == null || cityStateId.matches(server)) &&

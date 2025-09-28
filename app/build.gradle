@@ -54,7 +54,6 @@ apply plugin: 'com.jaredsburrows.license'
 apply plugin: 'dagger.hilt.android.plugin'
 apply plugin: 'io.gitlab.arturbosch.detekt'
 apply plugin: 'me.proton.core.gradle-plugins.environment-config'
-apply plugin: 'com.android.compose.screenshot'
 
 dependencyCheck {
     formats = ["SARIF", "HTML", "JUNIT"]
@@ -136,7 +135,7 @@ def preferencesSalt = System.getenv("DEPRECATED_PREF_SALT") ?: "Salt"
 def preferencesKey = System.getenv("DEPRECATED_PREF_KEY") ?: "Key"
 def serviceAccountCredentialsPath = project.hasProperty('serviceAccountFilePath') ? serviceAccountFilePath : "service_account.json"
 def testAccountPassword = System.getenv("TEST_ACCOUNT_PASS") ?: project.hasProperty('testAccountPassword') ? testAccountPassword : "Pass"
-def appId = project.hasProperty('appId') ? appId : "ch.protonvpn.android"
+def appId = project.hasProperty('appId') ? appId : "ru.protonmod.next"
 def supportedLocales = ['b+es+419', 'be', 'ca', 'cs', 'de', 'el', 'en', 'es-rES', 'es-rMX', 'fa', 'fi', 'fr', 'hu', 'in', 'it', 'ja', 'ka', 'ko', 'nb-rNO', 'nl', 'pl', 'pt-rBR', 'pt-rPT', 'ro', 'ru', 'sk', 'sl', 'sv-rSE', 'tr', 'uk', 'zh-rCN', 'zh-rTW']
 def helpers = new Helpers(rootDir, providers)
 def debugKeystorePath = System.getenv("DEBUG_KEYSTORE_FILE")
@@ -444,8 +443,8 @@ sentry {
     // local file or environment variables.
     // To disable the upload temporarily (e.g. when building locally) add "release" to
     // ignoredBuildTypes (I wish there was a better way...).
-    includeProguardMapping = true
-    uploadNativeSymbols = true
+    includeProguardMapping = false
+    uploadNativeSymbols = false
     ignoredBuildTypes = ["debug"]
     // It would be best to set only the single dimension "openSource" but it doesn't work this way.
     ignoredFlavors = ["productionVanillaOpenSource"]

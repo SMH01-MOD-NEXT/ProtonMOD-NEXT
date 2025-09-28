@@ -42,16 +42,21 @@ class ProfilesServerDataAdapter @Inject constructor(
     suspend fun countries(feature: ServerFeature?) : List<TypeAndLocationScreenState.CountryItem> {
         val countries = serverManager.getVpnCountries().asSequence()
         return if (feature != null) {
-            countries.filter { country -> country.serverList.any { it.features.hasFlag(feature.flag) } }
+            countries.filter { country ->
+                country.serverList.any { it.isFreeServer && it.features.hasFlag(feature.flag) }
+            }
         } else {
-            countries
+            countries.filter { country ->
+                country.serverList.any { it.isFreeServer }
+            }
         }.map { country ->
             TypeAndLocationScreenState.CountryItem(
                 CountryId(country.id()),
-                country.serverList.any { it.online }
+                country.serverList.any { it.isFreeServer && it.online }
             )
         }.toList()
     }
+
 
     suspend fun citiesOrStates(
         countryId: CountryId,
@@ -90,7 +95,7 @@ class ProfilesServerDataAdapter @Inject constructor(
         return serverManager.getVpnExitCountry(exitCountry.countryCode, secureCore)
             ?.serverList
             ?.asSequence()
-            ?.filter { !it.isFreeServer }
+            ?.filter { !it.isPlusServer }
             ?.filter { it.isInCityOrState(cityOrState) && it.satisfiesFeatures(features) }
             ?.map { it.toViewState() }
             ?.toList()

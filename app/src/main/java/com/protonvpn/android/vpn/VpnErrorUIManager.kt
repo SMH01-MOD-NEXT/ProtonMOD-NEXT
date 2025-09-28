@@ -68,15 +68,15 @@ class VpnErrorUIManager @Inject constructor(
         scope.launch {
             userPlanManager.planChangeFlow.collect {
                 if (it.isDowngrade && !stateMonitor.isEstablishingOrConnected) {
-                    displayInformation(
-                        InformationNotification(
-                            title = appContext.getString(R.string.notification_subscription_expired_title),
-                            content = appContext.getString(R.string.notification_subscription_expired_no_reconnection_content),
-                            reconnectionInformation = null,
-                            action = createPlanUpgradeAction(UpgradeSource.DOWNGRADE),
-                            fullScreenDialog = FullScreenDialog(null, true, null)
-                        )
-                    )
+                //    displayInformation(
+                      //  InformationNotification(
+                         //   title = appContext.getString(R.string.notification_subscription_expired_title),
+                         //   content = appContext.getString(R.string.notification_subscription_expired_no_reconnection_content),
+                          //  reconnectionInformation = null,
+                         //   action = createPlanUpgradeAction(UpgradeSource.DOWNGRADE),
+                          //  fullScreenDialog = FullScreenDialog(null, true, null)
+                     //   )
+                   // )
                 }
             }
         }

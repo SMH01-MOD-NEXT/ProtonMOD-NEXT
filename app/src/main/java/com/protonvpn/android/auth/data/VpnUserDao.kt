@@ -22,12 +22,44 @@ package com.protonvpn.android.auth.data
 import androidx.room.Dao
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import me.proton.core.data.room.db.BaseDao
 import me.proton.core.domain.entity.UserId
+import me.proton.core.network.domain.session.SessionId
+
 
 @Dao
 abstract class VpnUserDao : BaseDao<VpnUser>() {
 
     @Query("SELECT * FROM VpnUser WHERE userId = :userId")
-    abstract fun getByUserId(userId: UserId): Flow<VpnUser?>
+    protected abstract fun getRawByUserId(userId: UserId): Flow<VpnUser?>
+
+    fun getByUserId(userId: UserId): Flow<VpnUser> =
+        getRawByUserId(userId).map { user ->
+            (user ?: VpnUser(
+                userId = userId,
+                subscribed = 1,
+                services = VpnUser.VPN_SUBSCRIBED_FLAG,
+                delinquent = 0,
+                credit = 0,
+                hasPaymentMethod = false,
+                status = 0,
+                expirationTime = Int.MAX_VALUE,
+                planName = "plus",
+                planDisplayName = "Plus",
+                maxTier = VpnUser.PLUS_TIER,
+                maxConnect = 10,
+                name = "mod",
+                groupId = "mod",
+                password = "",
+                updateTime = System.currentTimeMillis(),
+                sessionId = SessionId("mod"),
+                autoLoginName = null
+            )).copy(
+                subscribed = 1,
+                services = VpnUser.VPN_SUBSCRIBED_FLAG,
+                maxTier = VpnUser.PLUS_TIER
+            )
+        }
 }
+
