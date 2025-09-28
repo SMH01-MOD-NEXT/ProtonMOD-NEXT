@@ -47,6 +47,8 @@ import com.protonvpn.android.redesign.vpn.usecases.SettingsForConnection
 import com.protonvpn.android.settings.data.LocalUserSettings
 import com.protonvpn.android.ui.ForegroundActivityTracker
 import com.protonvpn.android.ui.home.GetNetZone
+import com.protonvpn.android.ui.home.vpn.fetchRealIp
+import com.protonvpn.android.ui.home.vpn.fetchRealLocation
 import com.protonvpn.android.utils.Constants
 import com.protonvpn.android.utils.Storage
 import com.protonvpn.android.utils.SyncStateFlow
@@ -227,10 +229,14 @@ abstract class VpnBackend(
                     )
                     // Local Agent's ClientIP is not accurate for secure core
                     if (lastConnectionParams?.server?.isSecureCoreServer != true) {
-                        if (!newConnectionDetails.deviceIp.isNullOrBlank())
-                            getNetZone.updateIp(newConnectionDetails.deviceIp)
-                        if (!newConnectionDetails.deviceCountry.isNullOrBlank())
-                            getNetZone.updateCountry(newConnectionDetails.deviceCountry)
+                        val realIp = fetchRealIp()
+                        if (!realIp.isNullOrBlank()) {
+                            getNetZone.updateIp(realIp)
+                        }
+                        val realLocation = fetchRealLocation()
+                        if (realLocation != null && !realLocation.country.isNullOrBlank()) {
+                            getNetZone.updateCountry(realLocation.country)
+                        }
                     }
                 }
                 isFinalError = status.reason?.final == true

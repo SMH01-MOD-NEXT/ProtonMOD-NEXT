@@ -42,6 +42,7 @@ import com.protonvpn.android.servers.Server
 import com.protonvpn.android.servers.UpdateServerListFromApi
 import com.protonvpn.android.servers.api.ServersCountResponse
 import com.protonvpn.android.servers.api.StreamingServicesResponse
+import com.protonvpn.android.ui.home.vpn.fetchRealLocation
 import com.protonvpn.android.utils.ServerManager
 import com.protonvpn.android.utils.Storage
 import com.protonvpn.android.utils.UserPlanManager
@@ -235,25 +236,32 @@ class ServerListUpdater @Inject constructor(
         }
     }
 
-    private suspend fun updateLocationFromApi(): ApiResult<UserLocation> {
+    private suspend fun updateLocationFromApi(): ApiResult<Any> {
         val result = api.getLocation()
-        if (result is ApiResult.Success && vpnStateMonitor.isDisabled) {
-            with(result.value) {
-                prefs.lastKnownCountry = country
-                prefs.lastKnownIsp = isp
-                prefs.lastKnownIpLatitude = latitude
-                prefs.lastKnownIpLongitude = longitude
-                ProtonLogger.logCustom(LogCategory.APP, "location: $country, isp: $isp (as seen by API)")
-            }
 
-            val newIp = result.value.ipAddress
-            if (newIp.isNotEmpty()) {
-                getNetZone.updateIp(newIp)
-                return result
+        // если VPN выключен — пробуем получить реальные данные
+        if (vpnStateMonitor.isDisabled) {
+            val realLocation = fetchRealLocation()
+            if (realLocation != null) {
+                prefs.lastKnownCountry = realLocation.country
+                prefs.lastKnownIsp = realLocation.isp
+                prefs.lastKnownIpLatitude = realLocation.latitude
+                prefs.lastKnownIpLongitude = realLocation.longitude
+                getNetZone.updateIp(realLocation.ipAddress)
+
+                ProtonLogger.logCustom(
+                    LogCategory.APP,
+                    "location: ${realLocation.country}, isp: ${realLocation.isp} (real WAN)"
+                )
+
+                return ApiResult.Success(realLocation)
             }
         }
+
+        // fallback — если не удалось, возвращаем как было
         return result
     }
+
 
     suspend fun updateServerList(forceFreshUpdate: Boolean = false): UpdateServerListFromApi.Result {
         if (forceFreshUpdate) {
