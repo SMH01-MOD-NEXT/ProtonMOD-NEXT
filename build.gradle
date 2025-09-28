@@ -70,8 +70,8 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.compose' version "$kotlin_version" apply false
 }
 project.ext {
-    minSdkVersion = 26
-    minSdkVersionAmazon = 25 // Fire OS 6, see VPNAND-1914.
+    minSdkVersion = 29
+    minSdkVersionAmazon = 29
     compileSdkVersion = 35
     compileNdkVersion = "28.1.13356709"
 }

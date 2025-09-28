@@ -164,6 +164,9 @@ android {
         viewBinding true
     }
     defaultConfig {
+        ndk {
+            abiFilters "arm64-v8a", "x86_64"
+        }
         applicationId appId
         minSdkVersion rootProject.ext.minSdkVersion // See also build flavors.
         targetSdkVersion 35
