@@ -77,6 +77,7 @@ import com.protonvpn.android.R
 import com.protonvpn.android.base.ui.SimpleModalBottomSheet
 import com.protonvpn.android.netshield.NetShieldActions
 import com.protonvpn.android.netshield.NetShieldProtocol
+import com.protonvpn.android.proxy.VlessManager
 import com.protonvpn.android.redesign.app.ui.MainActivityViewModel
 import com.protonvpn.android.redesign.app.ui.SettingsChangeViewModel
 import com.protonvpn.android.redesign.base.ui.LocalVpnUiDelegate
@@ -269,6 +270,13 @@ fun HomeRoute(
                 }
 
                 Log.d("ProxyToggle", "Proxy disabled automatically on Home screen")
+            }
+            val vlessManager = VlessManager.getInstance(context.applicationContext)
+            if (!vlessManager.isRunning()) {
+                Log.d("VlessManagerCheck", "VlessManager is not running. Starting it now.")
+                vlessManager.start()
+            } else {
+                Log.d("VlessManagerCheck", "VlessManager is already running.")
             }
             (context as Activity).reportFullyDrawn()
         }

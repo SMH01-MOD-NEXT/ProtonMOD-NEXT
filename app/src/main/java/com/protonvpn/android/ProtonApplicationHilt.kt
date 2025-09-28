@@ -61,6 +61,7 @@ class ProtonApplicationHilt : ProtonApplication(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         SentryIntegration.initAccountSentry() // Requires Hilt.
+        ProxyPrefs(this).setEnabled(false)
         if (isMainProcess()) {
             initDependencies()
 

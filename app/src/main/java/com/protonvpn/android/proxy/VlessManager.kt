@@ -10,17 +10,13 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
-import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.net.Socket
@@ -31,19 +27,14 @@ import kotlin.system.measureTimeMillis
  */
 class VlessManager private constructor(private val context: Context) {
 
-    sealed class State {
-        object Stopped : State()
-        object Starting : State()
-        object Pinging : State()
-        data class Ready(val bestServerHost: String) : State()
-        data class Error(val message: String) : State()
-    }
-
-    private val _state = MutableStateFlow<State>(State.Stopped)
-    val state: StateFlow<State> = _state
-
     private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var xrayProcess: Process? = null
+
+    // --- State Properties ---
+    @Volatile private var isRunning = false
+    @Volatile private var isReady = false
+    @Volatile private var bestServerHost: String? = null
+    @Volatile private var errorMessage: String? = null
 
     private val xrayBinary: File by lazy {
         File(context.applicationInfo.nativeLibraryDir, XRAY_BINARY_NAME)
@@ -51,14 +42,18 @@ class VlessManager private constructor(private val context: Context) {
 
     fun start() {
         Log.d(TAG, "Start command received.")
-        if (state.value !is State.Stopped && state.value !is State.Error) {
+        if (isRunning) {
             Log.w(TAG, "Manager is already running or starting. Command ignored.")
             return
         }
 
         coroutineScope.launch {
             try {
-                _state.value = State.Starting
+                // Set initial state flags
+                isRunning = true
+                isReady = false
+                errorMessage = null
+                bestServerHost = null
                 Log.d(TAG, "State -> Starting. Checking for Xray binary...")
 
                 if (!xrayBinary.exists() || !xrayBinary.canExecute()) {
@@ -66,7 +61,6 @@ class VlessManager private constructor(private val context: Context) {
                 }
                 Log.d(TAG, "Binary found and executable: ${xrayBinary.absolutePath}")
 
-                _state.value = State.Pinging
                 Log.d(TAG, "State -> Pinging. Fetching and decoding configs...")
                 val configs = fetchAndDecodeConfigs()
                 Log.d(TAG, "Found ${configs.size} configurations. Finding the best server...")
@@ -74,8 +68,8 @@ class VlessManager private constructor(private val context: Context) {
                 val bestServer = findBestServer(configs)
                     ?: throw Exception("No responsive VLESS servers found after pinging.")
 
-                val bestServerHost = bestServer.extractHost()
-                Log.d(TAG, "Found best server: ${bestServer.optString("ps", "Unnamed")} with host $bestServerHost")
+                val host = bestServer.extractHost()
+                Log.d(TAG, "Found best server: ${bestServer.optString("ps", "Unnamed")} with host $host")
 
                 // [FIX] Remove both routing and dns blocks to prevent crashes without geoip/geosite files.
                 if (bestServer.has("routing")) {
@@ -118,7 +112,8 @@ class VlessManager private constructor(private val context: Context) {
 
                 if (testProxyConnection()) {
                     delay(100) // User-requested delay
-                    _state.value = State.Ready(bestServerHost)
+                    isReady = true
+                    bestServerHost = host
                     Log.d(TAG, "State -> Ready. Xray process started and tested successfully.")
                 } else {
                     throw Exception("Proxy connection test failed after setup.")
@@ -126,8 +121,8 @@ class VlessManager private constructor(private val context: Context) {
 
             } catch (e: Exception) {
                 Log.e(TAG, "Error in VlessManager", e)
-                _state.value = State.Error(e.message ?: "Unknown error in VlessManager")
-                stop()
+                errorMessage = e.message ?: "Unknown error in VlessManager"
+                stop() // Ensure cleanup on failure
             }
         }
     }
@@ -136,7 +131,10 @@ class VlessManager private constructor(private val context: Context) {
         Log.d(TAG, "Stop command received.")
         xrayProcess?.destroyForcibly()
         xrayProcess = null
-        _state.value = State.Stopped
+        isRunning = false
+        isReady = false
+        bestServerHost = null
+        // Error message is preserved until next start for inspection
         Log.d(TAG, "State -> Stopped. Xray process has been terminated.")
     }
 
@@ -145,6 +143,13 @@ class VlessManager private constructor(private val context: Context) {
         stop()
         coroutineScope.cancel()
     }
+
+    // --- Public State Checkers ---
+    fun isRunning(): Boolean = isRunning
+    fun isReady(): Boolean = isReady
+    fun getBestServerHost(): String? = bestServerHost
+    fun getErrorMessage(): String? = errorMessage
+
 
     private suspend fun testProxyConnection(): Boolean = withContext(Dispatchers.IO) {
         Log.d(TAG, "Initiating proxy connection test...")
@@ -276,11 +281,6 @@ class VlessManager private constructor(private val context: Context) {
         throw Exception("Proxy on port $PROXY_PORT did not become available within ${timeoutMs}ms.")
     }
 
-    fun isReady(): Boolean {
-        return state.value is State.Ready
-    }
-
-
     private fun JSONObject.extractHost(): String = this.getJSONArray("outbounds").getJSONObject(0)
         .getJSONObject("settings").getJSONArray("vnext").getJSONObject(0).getString("address")
 
@@ -305,4 +305,3 @@ class VlessManager private constructor(private val context: Context) {
         }
     }
 }
-
