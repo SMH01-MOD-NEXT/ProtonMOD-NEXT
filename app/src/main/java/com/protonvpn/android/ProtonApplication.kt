@@ -220,11 +220,7 @@ open class ProtonApplication : Application() {
 
                                     val app = activity.application as ProtonApplicationHilt
 
-                                    if (newState) {
-                                        GlobalScope.launch {
-                                            app.vlessManager.start()
-                                        }
-                                    } else {
+                                    if (!newState) {
                                         app.appScope.launch(Dispatchers.IO) {
                                             app.okHttpClient.connectionPool.evictAll()
                                         }

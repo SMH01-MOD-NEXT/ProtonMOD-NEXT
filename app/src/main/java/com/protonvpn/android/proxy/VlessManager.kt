@@ -1,3 +1,24 @@
+/*
+ *
+ *  * Copyright (c) 2025. Proton AG
+ *  *
+ *  * This file is part of ProtonVPN.
+ *  *
+ *  * ProtonVPN is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * ProtonVPN is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with ProtonVPN.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package com.protonvpn.android.proxy
 
 import android.content.Context
@@ -12,6 +33,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -119,13 +141,18 @@ class VlessManager private constructor(private val context: Context) {
                     throw Exception("Proxy connection test failed after setup.")
                 }
 
+            } catch (e: java.io.InterruptedIOException) {
+                // Это штатная ситуация при отмене чтения/остановке процесса
+                Log.d(TAG, "Xray stream interrupted (normal on stop).")
+                stop()
             } catch (e: Exception) {
                 Log.e(TAG, "Error in VlessManager", e)
                 errorMessage = e.message ?: "Unknown error in VlessManager"
-                stop() // Ensure cleanup on failure
+                restart() // Ensure cleanup on failure
             }
         }
     }
+
 
     fun stop() {
         Log.d(TAG, "Stop command received.")
@@ -137,6 +164,16 @@ class VlessManager private constructor(private val context: Context) {
         // Error message is preserved until next start for inspection
         Log.d(TAG, "State -> Stopped. Xray process has been terminated.")
     }
+
+    fun restart() {
+        Log.d(TAG, "Restarting VlessManager...")
+        stop()
+        runBlocking {
+            delay(50)
+        }
+        start()
+    }
+
 
     fun destroy() {
         Log.d(TAG, "Destroying VlessManager instance.")

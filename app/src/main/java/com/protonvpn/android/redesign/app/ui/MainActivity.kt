@@ -19,10 +19,14 @@
 
 package com.protonvpn.android.redesign.app.ui
 
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -44,6 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.protonvpn.android.ProtonApplicationHilt
 import com.protonvpn.android.R
 import com.protonvpn.android.base.ui.ProtonVpnPreview
 import com.protonvpn.android.base.ui.theme.VpnTheme
@@ -73,6 +78,7 @@ import com.protonvpn.android.update.UpdatePromptForStaleVersion
 import com.protonvpn.android.vpn.ConnectTrigger
 import com.protonvpn.android.widget.WidgetActionHandler
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -136,6 +142,28 @@ class MainActivity : VpnUiDelegateProvider, AppCompatActivity() {
             startActivity(Intent(this, TvMainActivity::class.java))
             finish()
             return
+        }
+
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = cm.activeNetwork
+        val caps = cm.getNetworkCapabilities(network)
+
+        val hasInternet = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true &&
+                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+
+        if (hasInternet) {
+            // ⚡️ Запускаем VlessManager только если сеть есть
+            val app = application as ProtonApplicationHilt
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    app.vlessManager.start()
+                    Log.d("MainActivity", "VlessManager started on app launch")
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Failed to start VlessManager", e)
+                }
+            }
+        } else {
+            Log.w("MainActivity", "No internet access, skipping VlessManager start")
         }
 
         currentConfiguration = resources.configuration
