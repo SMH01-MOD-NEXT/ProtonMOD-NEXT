@@ -122,10 +122,10 @@ fun RecentsList(
     val peekPositionObserver = Modifier.onGloballyPositioned {
         expandState?.setPeekHeight(it.boundsInParent().bottom.roundToInt())
     }
-    val peekThresholdItem = when {
-        promoBanner != null -> PeekThresholdItem.PromoBanner
-        viewState.recents.isNotEmpty() || upsellContent != null -> PeekThresholdItem.Header
-        else -> PeekThresholdItem.ConnectionCard
+    val peekThresholdItem = if (viewState.recents.isNotEmpty()) {
+        PeekThresholdItem.Header
+    } else {
+        PeekThresholdItem.ConnectionCard
     }
 
     LazyColumn(
@@ -167,29 +167,11 @@ fun RecentsList(
             }
         }
         if (promoBanner != null) {
-            item {
-                val peekHeightPx = with(LocalDensity.current) { promoBannerPeekOffset.toPx() }
-                val bannerPeekObserver = Modifier.onGloballyPositioned {
-                    expandState?.setPeekHeight((it.boundsInParent().top + peekHeightPx).roundToInt())
-                }
-                promoBanner(
-                    Modifier
-                        .padding(horizontal = horizontalPadding)
-                        .fillMaxWidth()
-                        .animateItemPlacement()
-                        .optional({ peekThresholdItem == PeekThresholdItem.PromoBanner }, bannerPeekObserver)
-                )
-            }
         }
-        if (viewState.recents.isNotEmpty() || upsellContent != null) {
-            // Note: so far it's always either upsell content or recents.
-            // This part will change with the addition of promo banners.
+        if (viewState.recents.isNotEmpty()) {
             item {
-                val headlineText =
-                    if (viewState.recents.isNotEmpty()) R.string.recents_headline
-                    else R.string.home_upsell_carousel_headline
                 Text(
-                    stringResource(id = headlineText),
+                    stringResource(id = R.string.recents_headline),
                     style = ProtonTheme.typography.body2Regular,
                     color = ProtonTheme.colors.textWeak,
                     modifier = Modifier
@@ -199,11 +181,6 @@ fun RecentsList(
                         .optional({ peekThresholdItem == PeekThresholdItem.Header }, peekPositionObserver)
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 )
-            }
-        }
-        if (upsellContent != null) {
-            item {
-                upsellContent(Modifier.animateItemPlacement(), horizontalPadding)
             }
         }
         itemsIndexed(viewState.recents, key = { _, item -> item.id }) { index, item ->

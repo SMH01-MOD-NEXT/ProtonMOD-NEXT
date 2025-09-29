@@ -199,19 +199,11 @@ fun createOnConnectAction(
     )
 }
 
-fun navigateToUpsellFromBanner(context: Context, bannerType: ServerGroupUiItem.BannerType) =
-    when(bannerType) {
-        ServerGroupUiItem.BannerType.Countries ->
-            CarouselUpgradeDialogActivity.launch<UpgradePlusCountriesHighlightsFragment>(context)
-        ServerGroupUiItem.BannerType.SecureCore ->
-            CarouselUpgradeDialogActivity.launch<UpgradeSecureCoreHighlightsFragment>(context)
-        ServerGroupUiItem.BannerType.P2P ->
-            CarouselUpgradeDialogActivity.launch<UpgradeP2PHighlightsFragment>(context)
-        ServerGroupUiItem.BannerType.Tor ->
-            CarouselUpgradeDialogActivity.launch<UpgradeTorHighlightsFragment>(context)
-        is ServerGroupUiItem.BannerType.Search ->
-            CarouselUpgradeDialogActivity.launch<UpgradePlusCountriesHighlightsFragment>(context)
-    }
+fun navigateToUpsellFromBanner(
+    context: Context,
+    bannerType: ServerGroupUiItem.BannerType
+): Nothing? = null
+
 
 @Composable
 fun ServerGroupToolbarScaffold(
@@ -347,7 +339,7 @@ fun ServerGroupItemsList(
         onItemClick = createOnConnectAction(actions, uiDelegate, context, state.selectedFilter, onNavigateToHomeOnConnect),
         onItemOpen = { actions.onItemOpen(it, state.selectedFilter) },
         onOpenInfo = { infoType -> infoSheetState.show(infoType) },
-        navigateToUpsell = { navigateToUpsellFromBanner(context, it) },
+        navigateToUpsell = {},
         horizontalContentPadding = largeScreenContentPadding(),
         modifier = Modifier.padding(paddingValues)
     )
@@ -375,8 +367,7 @@ fun ServerGroupItemsList(
                     is ServerGroupUiItem.Header ->
                         ServerGroupHeader(item, onOpenInfo = onOpenInfo)
 
-                    is ServerGroupUiItem.Banner ->
-                        ServerGroupBanner(item, navigateToUpsell)
+                    is ServerGroupUiItem.Banner -> {}
 
                     is ServerGroupUiItem.ServerGroup -> {
                         ServerGroupItem(item, onItemOpen = onItemOpen, onItemClick = onItemClick)

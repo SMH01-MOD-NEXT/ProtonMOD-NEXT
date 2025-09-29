@@ -150,7 +150,7 @@ class SettingsViewModel @Inject constructor(
             override val iconRes: Int = if (isEnabled) R.drawable.feature_splittunneling_on else R.drawable.feature_splittunneling_off
         ) : SettingViewState<Boolean>(
             value = isEnabled,
-            isRestricted = isFreeUser,
+            isRestricted = false,
             titleRes = R.string.settings_split_tunneling_title,
             settingValueView = SettingValue.SettingStringRes(if (isEnabled) R.string.split_tunneling_state_on else R.string.split_tunneling_state_off),
             descriptionRes = R.string.settings_split_tunneling_description,
@@ -162,11 +162,11 @@ class SettingsViewModel @Inject constructor(
             isFreeUser: Boolean,
             override val iconRes: Int = CoreR.drawable.ic_proton_rocket
         ) : SettingViewState<Boolean>(
-            value = vpnAcceleratorSettingValue && !isFreeUser,
-            isRestricted = isFreeUser,
+            value = vpnAcceleratorSettingValue,
+            isRestricted = false,
             iconRes = CoreR.drawable.ic_proton_rocket,
             titleRes = R.string.settings_vpn_accelerator_title,
-            settingValueView = SettingValue.SettingStringRes(if (vpnAcceleratorSettingValue && !isFreeUser) R.string.vpn_accelerator_state_on else R.string.vpn_accelerator_state_off),
+            settingValueView = SettingValue.SettingStringRes(if (vpnAcceleratorSettingValue) R.string.vpn_accelerator_state_on else R.string.vpn_accelerator_state_off),
             descriptionRes = R.string.settings_vpn_accelerator_description,
             annotationRes = R.string.learn_more
         )
@@ -214,7 +214,7 @@ class SettingsViewModel @Inject constructor(
             val isPrivateDnsActive: Boolean,
         ) : SettingViewState<Boolean>(
             value = enabled,
-            isRestricted = isFreeUser,
+            isRestricted = false,
             titleRes = R.string.settings_custom_dns_title,
             settingValueView = when {
                 isPrivateDnsActive ->
@@ -242,7 +242,7 @@ class SettingsViewModel @Inject constructor(
             overrideProfilePrimaryLabel: ConnectIntentPrimaryLabel.Profile?,
         ) : SettingViewState<Boolean>(
             value = value,
-            isRestricted = isFreeUser,
+            isRestricted = false,
             titleRes = R.string.settings_advanced_allow_lan_title,
             settingValueView =
                 if (overrideProfilePrimaryLabel != null) {
@@ -272,7 +272,7 @@ class SettingsViewModel @Inject constructor(
             overrideProfilePrimaryLabel: ConnectIntentPrimaryLabel.Profile?,
         ) : SettingViewState<NatType>(
             value = natType,
-            isRestricted = isFreeUser,
+            isRestricted = false,
             titleRes = R.string.settings_advanced_nat_type_title,
             settingValueView = if (overrideProfilePrimaryLabel != null) {
                 SettingValue.SettingOverrideValue(
@@ -343,8 +343,8 @@ class SettingsViewModel @Inject constructor(
             isIPv6FeatureFlagEnabled.observe(),
             isPrivateDnsActiveFlow,
         ) { user, defaultConnection, connectionSettings, isWidgetDiscovered, isIPv6FeatureFlagEnabled, isPrivateDnsActive ->
-            val isFree = user?.vpnUser?.isFreeUser == true
-            val isCredentialLess = user?.user?.isCredentialLess() == true
+            val isFree = false
+            val isCredentialLess = false
             val settings = connectionSettings.connectionSettings
             val profileOverrideInfo = connectionSettings.associatedProfile?.let { profile ->
                 val intentView = getConnectIntentViewState.forProfile(profile)
@@ -358,7 +358,7 @@ class SettingsViewModel @Inject constructor(
                 SettingViewState.NetShield(
                     settings.netShield != NetShieldProtocol.DISABLED,
                     profileOverrideInfo = profileOverrideInfo,
-                    isRestricted = netShieldAvailability != NetShieldAvailability.AVAILABLE,
+                    isRestricted = true,
                     dnsOverride = getDnsOverride(isPrivateDnsActive, settings),
                 )
             }
@@ -389,7 +389,7 @@ class SettingsViewModel @Inject constructor(
                     mode = settings.splitTunneling.mode,
                     currentModeAppNames = currentModeAppNames,
                     currentModeIps = settings.splitTunneling.currentModeIps(),
-                    isFreeUser = isFree,
+                    isFreeUser = false,
                 ),
                 protocol = SettingViewState.Protocol(settings.protocol, profileOverrideInfo?.primaryLabel),
                 defaultConnection = defaultConnectionSetting,
@@ -411,7 +411,7 @@ class SettingsViewModel @Inject constructor(
                         enabled = settings.customDns.effectiveEnabled,
                         customDns = settings.customDns.rawDnsList,
                         overrideProfilePrimaryLabel = profileOverrideInfo?.primaryLabel,
-                        isFreeUser = isFree,
+                        isFreeUser = false,
                         isPrivateDnsActive = isPrivateDnsActive,
                     ),
                 versionName = BuildConfig.VERSION_NAME,
@@ -490,7 +490,7 @@ class SettingsViewModel @Inject constructor(
                     planDisplayName = vpnUser.planDisplayName,
                     recoveryEmail = accountUserSettings?.email?.value,
                     passwordHint = accountUser.recovery?.state?.enum.passwordHint(),
-                    upgradeToPlusBanner = vpnUser.isFreeUser,
+                    upgradeToPlusBanner = false,
                     isFido2Enabled = isFido2Enabled(accountUser.userId),
                     registeredSecurityKeys = registeredSecurityKeys
                 )

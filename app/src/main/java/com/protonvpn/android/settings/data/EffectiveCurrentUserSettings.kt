@@ -106,33 +106,30 @@ abstract class BaseApplyEffectiveUserSettings(
         isTv: Boolean,
         flags: SettingsFeatureFlagsFlow.Flags,
     ): LocalUserSettings {
-        val isUserPlusOrAbove = vpnUser?.isUserPlusOrAbove == true
-        val effectiveVpnAccelerator = !isUserPlusOrAbove || settings.vpnAccelerator
-        val netShieldAvailable = vpnUser.getNetShieldAvailability() == NetShieldAvailability.AVAILABLE
-        val effectiveSplitTunneling =
-            if (isUserPlusOrAbove) settings.splitTunneling
-            else SplitTunnelingSettings(isEnabled = false)
-        val lanConnections = isUserPlusOrAbove && settings.lanConnections
+        val netShieldAvailable = vpnUser?.getNetShieldAvailability() == NetShieldAvailability.AVAILABLE
+
         return settings.copy(
-            defaultProfileId = if (isUserPlusOrAbove || isTv) settings.defaultProfileId else null,
-            lanConnections = lanConnections,
+            defaultProfileId = settings.defaultProfileId,
+            lanConnections = settings.lanConnections,
             lanConnectionsAllowDirect =
-                lanConnections && settings.lanConnectionsAllowDirect && flags.isDirectLanConnectionsEnabled,
+                settings.lanConnections && settings.lanConnectionsAllowDirect && flags.isDirectLanConnectionsEnabled,
             netShield = if (netShieldAvailable) {
-                if (isTv && !flags.isTvNetShieldSettingEnabled) NetShieldProtocol.ENABLED else settings.netShield
+                // если это ТВ и флаг запрещает — включаем только базовый NetShield
+                if (isTv && !flags.isTvNetShieldSettingEnabled) NetShieldProtocol.ENABLED
+                else settings.netShield
             } else {
                 NetShieldProtocol.DISABLED
             },
-            customDns = if (isUserPlusOrAbove) settings.customDns else CustomDnsSettings(false),
+            customDns = settings.customDns,
             theme = settings.theme,
-            vpnAccelerator = effectiveVpnAccelerator,
-            splitTunneling = effectiveSplitTunneling,
+            vpnAccelerator = settings.vpnAccelerator,
+            splitTunneling = settings.splitTunneling,
             ipV6Enabled = settings.ipV6Enabled && flags.isIPv6Enabled && !isTv
         )
     }
 }
 
-@Reusable
+    @Reusable
 class ApplyEffectiveUserSettings(
     mainScope: CoroutineScope,
     currentUser: CurrentUser,

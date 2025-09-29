@@ -92,7 +92,7 @@ data class LocalUserSettings(
     val lanConnections: Boolean = false,
     val lanConnectionsAllowDirect: Boolean = false,
     val mtuSize: Int = 1375,
-    val netShield: NetShieldProtocol = NetShieldProtocol.ENABLED_EXTENDED,
+    val netShield: NetShieldProtocol = NetShieldProtocol.DISABLED,
     val protocol: ProtocolSelection = ProtocolSelection.SMART,
     val randomizedNat: Boolean = true,
     val splitTunneling: SplitTunnelingSettings = SplitTunnelingSettings(),

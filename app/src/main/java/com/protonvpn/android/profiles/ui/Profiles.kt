@@ -251,7 +251,7 @@ fun ProfileItemPreview() {
                     ConnectIntentSecondaryLabel.Country(CountryId.sweden),
                     emptySet(),
                 ),
-                netShieldEnabled = true,
+                netShieldEnabled = false,
                 protocol = ProtocolSelection.SMART,
                 natType = NatType.Strict,
                 customDnsEnabled = false,

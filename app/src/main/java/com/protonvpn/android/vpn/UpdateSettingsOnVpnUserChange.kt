@@ -72,8 +72,8 @@ class UpdateSettingsOnVpnUserChange @Inject constructor(
 
                         current.copy(
                             defaultProfileId = current.orDefaultIf(resetDefaultProfile) { it.defaultProfileId },
-                            netShield = current.orDefaultIf(vpnUser.isFreeUser) { it.netShield },
-                            randomizedNat = current.orDefaultIf(vpnUser.isFreeUser) { it.randomizedNat },
+                            netShield = current.netShield,
+                            randomizedNat = current.randomizedNat,
                         )
                     }
                 }

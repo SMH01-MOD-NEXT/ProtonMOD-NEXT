@@ -64,7 +64,7 @@ class CustomDnsViewModel @Inject constructor(
             settingsForConnection.getFlowForCurrentConnection(),
             dnsOverrideFlow,
         ) { user, connectionSettings, dnsOverride ->
-            val isFree = user?.vpnUser?.isFreeUser == true
+            val isFree = false
             val customDnsSetting = connectionSettings.connectionSettings.customDns
             val profileOverrideInfo = connectionSettings.associatedProfile?.let { profile ->
                 val intentView = getConnectIntentViewState.forProfile(profile)

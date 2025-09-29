@@ -385,7 +385,7 @@ class VpnConnectionErrorHandler @Inject constructor(
         val secureCoreExpected = orgIntent.isSecureCore()
         // For profiles we allow switching only to servers compatible with its connect intent
         val eligibleOnlineServers = if (orgIntent.profileId != null) {
-            getOnlineServersForIntent(orgIntent, settingsForOrgIntent.protocol, vpnUser?.maxTier ?: VpnUser.FREE_TIER)
+            getOnlineServersForIntent(orgIntent, settingsForOrgIntent.protocol, VpnUser.FREE_TIER)
         } else {
             val gatewayName = (orgIntent as? ConnectIntent.Gateway)?.gatewayName
             serverManager.getOnlineAccessibleServers(secureCoreExpected, gatewayName, vpnUser, protocol)
@@ -513,7 +513,7 @@ class VpnConnectionErrorHandler @Inject constructor(
             is AnyConnectIntent.GuestHole -> {}
         }
 
-        val serverPlusOrAbove = server.tier >= VpnUser.PLUS_TIER
+        val serverPlusOrAbove = server.tier >= VpnUser.FREE_TIER
         if (vpnUser?.isUserPlusOrAbove == serverPlusOrAbove) {
             // Prefer plus servers for plus users
             score += 1 shl CompatibilityAspect.Tier.ordinal

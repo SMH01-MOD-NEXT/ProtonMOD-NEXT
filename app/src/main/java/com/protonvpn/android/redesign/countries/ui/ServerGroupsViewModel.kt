@@ -328,7 +328,7 @@ abstract class ServerGroupsViewModel<MainStateT>(
         val isConnectIntentFastest = connection?.intent?.matchesFastestItem() ?: false
         return ServerGroupUiItem.ServerGroup(
             data = this,
-            available = userTier == null || (countryId?.isFastest == true || (userTier > 0 && userTier >= tier)),
+            available = userTier == null || (countryId?.isFastest == true || (userTier > -1 && userTier >= -1)),
             connected = connection?.server.isCompatibleWith(
                 itemConnectIntent,
                 matchFastest = !isItemFastest || isConnectIntentFastest

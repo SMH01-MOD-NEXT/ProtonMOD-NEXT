@@ -38,6 +38,7 @@ import com.protonvpn.android.redesign.settings.ui.NatType
 import com.protonvpn.android.redesign.vpn.ui.ConnectIntentAvailability
 import com.protonvpn.android.redesign.vpn.ui.ConnectIntentViewStateProfile
 import com.protonvpn.android.redesign.vpn.ui.GetConnectIntentViewState
+import com.protonvpn.android.servers.ServerManager2
 import com.protonvpn.android.settings.data.EffectiveCurrentUserSettings
 import com.protonvpn.android.ui.storage.UiStateStorage
 import com.protonvpn.android.utils.Quadruple
@@ -202,10 +203,7 @@ class ProfilesViewModel @Inject constructor(
     ): ProfileViewItem {
         val isConnected = info.id == connectedProfileId
         val intent = connectIntent
-        val availability = when {
-            vpnUser.isFreeUser -> ConnectIntentAvailability.UNAVAILABLE_PLAN
-            else -> getIntentAvailability(intent, vpnUser, settingsProtocol)
-        }
+        val availability = getIntentAvailability(intent, vpnUser, settingsProtocol)
         val intentViewState = getConnectIntentViewState.forProfile(this)
         val netShieldEnabled = intent.settingsOverrides?.netShield == NetShieldProtocol.ENABLED_EXTENDED
         val protocol = intent.settingsOverrides?.protocol ?: settingsProtocol

@@ -95,7 +95,7 @@ class ProfilesServerDataAdapter @Inject constructor(
         return serverManager.getVpnExitCountry(exitCountry.countryCode, secureCore)
             ?.serverList
             ?.asSequence()
-            ?.filter { !it.isPlusServer }
+            ?.filter { it.isFreeServer }
             ?.filter { it.isInCityOrState(cityOrState) && it.satisfiesFeatures(features) }
             ?.map { it.toViewState() }
             ?.toList()
