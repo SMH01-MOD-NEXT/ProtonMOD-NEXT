@@ -165,11 +165,12 @@ fun ProtonBasicAlert(
 }
 
 @Composable
-fun ProtonDialogButton(onClick: () -> Unit, text: String, modifier: Modifier = Modifier) {
+fun ProtonDialogButton(onClick: () -> Unit, text: String, enabled: Boolean = true, modifier: Modifier = Modifier) {
     ProtonTextButton(
         onClick = onClick,
         style = ProtonTheme.typography.headlineSmallUnspecified,
-        modifier = modifier
+        modifier = modifier,
+        enabled = enabled
     ) {
         Text(text = text)
     }
@@ -179,10 +180,11 @@ fun ProtonDialogButton(onClick: () -> Unit, text: String, modifier: Modifier = M
 fun ProtonDialogCheckbox(
     text: String,
     value: Boolean,
-    onValueChange: (Boolean) -> Unit
+    onValueChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        Modifier
+        modifier
             .toggleable(
                 value,
                 onValueChange = onValueChange,

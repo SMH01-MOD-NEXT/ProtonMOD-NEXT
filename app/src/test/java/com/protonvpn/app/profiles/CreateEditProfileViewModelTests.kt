@@ -45,6 +45,7 @@ import com.protonvpn.android.profiles.ui.SettingsScreenState
 import com.protonvpn.android.profiles.ui.ShouldAskForProfileReconnection
 import com.protonvpn.android.profiles.ui.TypeAndLocationScreenState
 import com.protonvpn.android.profiles.usecases.CreateOrUpdateProfileFromUi
+import com.protonvpn.android.profiles.usecases.PrivateBrowsingAvailability
 import com.protonvpn.android.redesign.CountryId
 import com.protonvpn.android.redesign.countries.Translator
 import com.protonvpn.android.redesign.settings.ui.NatType
@@ -119,10 +120,11 @@ class CreateEditProfileViewModelTests {
         natType = NatType.Moderate,
         lanConnections = true,
         lanConnectionsAllowDirect = false,
-        autoOpen = ProfileAutoOpen.None(""),
+        autoOpen = ProfileAutoOpen.None,
         customDnsSettings = CustomDnsSettings(false),
         isAutoOpenNew = true,
         isPrivateDnsActive = false,
+        showPrivateBrowsing = true,
     )
     // Matches the screen states above.
     private val testProfile = Profile(
@@ -141,7 +143,7 @@ class CreateEditProfileViewModelTests {
             profileId = 1L,
             settingsOverrides = settingsScreenState.toSettingsOverrides(),
         ),
-        autoOpen = ProfileAutoOpen.None(""),
+        autoOpen = ProfileAutoOpen.None,
     )
 
     @Before
@@ -175,7 +177,8 @@ class CreateEditProfileViewModelTests {
             profilesDao,
             currentUser,
             telemetry = profilesTelemetry,
-            wallClock = { testScope.currentTime }
+            wallClock = { testScope.currentTime },
+            getPrivateBrowsingAvailability = { PrivateBrowsingAvailability.AvailableWithDefault }
         )
         val supportsProtocol = SupportsProtocol(createGetSmartProtocols())
         serverManager = createInMemoryServerManager(
@@ -203,7 +206,9 @@ class CreateEditProfileViewModelTests {
             uiStateStorage = UiStateStorage(UiStateStoreProvider(InMemoryDataStoreFactory()), currentUser),
             isPrivateDnsActiveFlow = IsPrivateDnsActiveFlow(isPrivateDnsActiveFlow),
             isDirectLanConnectionsFeatureFlagEnabled = FakeIsLanDirectConnectionsFeatureFlagEnabled(true),
-            transientMustHaves = TransientMustHaves({ testScope.currentTime })
+            transientMustHaves = TransientMustHaves({ testScope.currentTime }),
+            autoOpenAppInfoHelper = mockk(relaxed = true),
+            getPrivateBrowsingAvailability = { PrivateBrowsingAvailability.AvailableWithDefault },
         )
         viewModel.localeFlow.value = Locale("en")
     }

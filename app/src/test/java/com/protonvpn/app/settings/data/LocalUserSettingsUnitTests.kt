@@ -68,6 +68,7 @@ class LocalUserSettingsUnitTests {
                 },
                 "telemetry": true,
                 "theme": "Dark",
+                "tvAutoConnectOnBoot": false,
                 "vpnAccelerator": true,
                 "ipV6Enabled": true,
                 "customDns": {
@@ -120,6 +121,7 @@ class LocalUserSettingsUnitTests {
                 },
                 "telemetry": false,
                 "theme": "System",
+                "tvAutoConnectOnBoot": true,
                 "vpnAccelerator": false,
                 "ipV6Enabled": false,
                 "customDns": {
@@ -149,6 +151,7 @@ class LocalUserSettingsUnitTests {
             ),
             telemetry = false,
             theme = ThemeType.System,
+            tvAutoConnectOnBoot = true,
             vpnAccelerator = false,
             ipV6Enabled = false,
             customDns = CustomDnsSettings(

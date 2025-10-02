@@ -60,7 +60,8 @@
             android:enabled="false"
             android:launchMode="singleTask"
             android:configChanges="uiMode"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustResize"
+            tools:ignore="AppLinkUrlError">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
@@ -93,10 +94,11 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".tv.TvUpgradeActivity"
-            android:theme="@style/AppTheme.TV.Browse" />
+            android:name=".tv.settings.autoconnect.TvSettingsAutoConnectActivity" />
         <activity
             android:name=".tv.settings.customdns.TvSettingsCustomDnsActivity" />
+        <activity
+            android:name=".tv.settings.customdns.add.TvSettingsAddCustomDnsActivity" />
         <activity
             android:name=".tv.settings.lanconnections.TvSettingsLanConnectionsActivity" />
         <activity
@@ -105,6 +107,8 @@
             android:name=".tv.settings.protocol.TvSettingsProtocolActivity" />
         <activity
             android:name=".tv.settings.splittunneling.TvSettingsSplitTunnelingActivity" />
+        <activity
+            android:name=".tv.upsell.TvUpsellActivity" />
 
         <activity
             android:name="me.proton.core.auth.presentation.ui.AddAccountActivity"
@@ -324,6 +328,13 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".vpn.autoconnect.AutoConnectBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
 

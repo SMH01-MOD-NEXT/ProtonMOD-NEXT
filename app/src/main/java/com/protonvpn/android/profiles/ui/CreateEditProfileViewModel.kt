@@ -34,6 +34,8 @@ import com.protonvpn.android.profiles.data.ProfileColor
 import com.protonvpn.android.profiles.data.ProfileIcon
 import com.protonvpn.android.profiles.data.ProfilesDao
 import com.protonvpn.android.profiles.usecases.CreateOrUpdateProfileFromUi
+import com.protonvpn.android.profiles.usecases.GetPrivateBrowsingAvailability
+import com.protonvpn.android.profiles.usecases.PrivateBrowsingAvailability
 import com.protonvpn.android.redesign.CityStateId
 import com.protonvpn.android.redesign.CountryId
 import com.protonvpn.android.redesign.recents.data.ConnectIntentData
@@ -46,6 +48,7 @@ import com.protonvpn.android.redesign.settings.ui.customdns.UndoCustomDnsRemove
 import com.protonvpn.android.redesign.vpn.ConnectIntent
 import com.protonvpn.android.redesign.vpn.ServerFeature
 import com.protonvpn.android.settings.data.CustomDnsSettings
+import com.protonvpn.android.ui.settings.LabeledItem
 import com.protonvpn.android.ui.storage.UiStateStorage
 import com.protonvpn.android.ui.vpn.VpnBackgroundUiDelegate
 import com.protonvpn.android.utils.CountryTools
@@ -82,16 +85,18 @@ private fun defaultSettingScreenState(
     isAutoOpenNew: Boolean,
     lanDirectConnectionsFeatureFlagEnabled: Boolean,
     isPrivateDnsEnabled: Boolean,
+    isPrivateBrowsingAvailable: Boolean,
 ) = SettingsScreenState(
     protocol = ProtocolSelection.SMART,
     netShield = true,
     natType = NatType.Strict,
     lanConnections = true,
     lanConnectionsAllowDirect = if (lanDirectConnectionsFeatureFlagEnabled) false else null,
-    autoOpen = ProfileAutoOpen.None(""),
+    autoOpen = ProfileAutoOpen.None,
     customDnsSettings = CustomDnsSettings(false),
     isAutoOpenNew = isAutoOpenNew,
     isPrivateDnsActive = isPrivateDnsEnabled,
+    showPrivateBrowsing = isPrivateBrowsingAvailable,
 )
 
 @Parcelize
@@ -209,6 +214,7 @@ data class SettingsScreenState(
     val autoOpen: ProfileAutoOpen,
     val isAutoOpenNew: Boolean,
     val customDnsSettings: CustomDnsSettings?,
+    val showPrivateBrowsing: Boolean,
 ) : Parcelable {
     fun toSettingsOverrides() = SettingsOverrides(
         protocolData = protocol.toData(),
@@ -245,6 +251,8 @@ class CreateEditProfileViewModel @Inject constructor(
     private val isPrivateDnsActiveFlow: IsPrivateDnsActiveFlow,
     private val isDirectLanConnectionsFeatureFlagEnabled: IsDirectLanConnectionsFeatureFlagEnabled,
     private val transientMustHaves: TransientMustHaves,
+    private val autoOpenAppInfoHelper: AutoOpenAppInfoHelper,
+    private val getPrivateBrowsingAvailability: GetPrivateBrowsingAvailability,
 ) : ViewModel() {
 
     private var editedProfileId: Long? = null
@@ -419,6 +427,7 @@ class CreateEditProfileViewModel @Inject constructor(
             isAutoOpenNew.first(),
             lanDirectConnectionsFeatureFlagEnabled = isDirectLanConnectionsFeatureFlagEnabled(),
             isPrivateDnsEnabled = isPrivateDnsActive,
+            isPrivateBrowsingAvailable = getPrivateBrowsingAvailability() != PrivateBrowsingAvailability.NotAvailable,
         )
     }
 
@@ -441,11 +450,13 @@ class CreateEditProfileViewModel @Inject constructor(
 
     private suspend fun getSettingsScreenState(profile: Profile): SettingsScreenState {
         val intent = profile.connectIntent
+        val isPrivateBrowsingAvailable = getPrivateBrowsingAvailability() != PrivateBrowsingAvailability.NotAvailable
         val directLanConnectionsFeatureFlagEnabled = isDirectLanConnectionsFeatureFlagEnabled()
         val defaultSettingScreenState = defaultSettingScreenState(
             isAutoOpenNew = isAutoOpenNew.first(),
             lanDirectConnectionsFeatureFlagEnabled = directLanConnectionsFeatureFlagEnabled,
             isPrivateDnsEnabled = isPrivateDnsActive,
+            isPrivateBrowsingAvailable = isPrivateBrowsingAvailable,
         )
 
         val lanConnectionsAllowDirect = if (directLanConnectionsFeatureFlagEnabled) {
@@ -458,6 +469,10 @@ class CreateEditProfileViewModel @Inject constructor(
             ?.let { it != NetShieldProtocol.DISABLED }
             ?: defaultSettingScreenState.netShield
 
+        // Show private browsing switch for auto-open if it's supported or when it was already
+        // enabled for given profile
+        val showPrivateBrowsing = isPrivateBrowsingAvailable ||
+            (profile.autoOpen is ProfileAutoOpen.Url && profile.autoOpen.openInPrivateMode)
         return SettingsScreenState(
             netShield = netShield,
             isPrivateDnsActive = isPrivateDnsActive,
@@ -468,6 +483,7 @@ class CreateEditProfileViewModel @Inject constructor(
             autoOpen = profile.autoOpen,
             customDnsSettings = intent.settingsOverrides?.customDns ?: defaultSettingScreenState.customDnsSettings,
             isAutoOpenNew = isAutoOpenNew.first(),
+            showPrivateBrowsing = showPrivateBrowsing,
         )
     }
 
@@ -811,4 +827,10 @@ class CreateEditProfileViewModel @Inject constructor(
             setCustomDns(CustomDnsSettings(toggleEnabled = true, rawDnsList = currentList + dns.trim()))
         }
     }
+
+    suspend fun getAutoOpenAppInfo(packageName: String): LabeledItem? =
+        autoOpenAppInfoHelper.getAppInfo(packageName)
+
+    suspend fun getAutoOpenAllAppsInfo(iconSizePx: Int): List<LabeledItem> =
+        autoOpenAppInfoHelper.getLaunchableAppsInfo(iconSizePx)
 }

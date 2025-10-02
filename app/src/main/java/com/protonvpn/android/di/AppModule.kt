@@ -60,6 +60,10 @@ import com.protonvpn.android.models.vpn.usecase.ProvideLocalNetworksImpl
 import com.protonvpn.android.models.vpn.usecase.SupportsProtocol
 import com.protonvpn.android.profiles.usecases.GetProfileById
 import com.protonvpn.android.profiles.usecases.GetProfileByIdImpl
+import com.protonvpn.android.profiles.usecases.GetPrivateBrowsingAvailability
+import com.protonvpn.android.profiles.usecases.GetPrivateBrowsingAvailabilityImpl
+import com.protonvpn.android.profiles.usecases.IsProfileAutoOpenPrivateBrowsingFeatureFlagEnabled
+import com.protonvpn.android.profiles.usecases.IsProfileAutoOpenPrivateBrowsingFeatureFlagEnabledImpl
 import com.protonvpn.android.redesign.countries.ui.ServerListViewModelDataAdapter
 import com.protonvpn.android.redesign.countries.ui.ServerListViewModelDataAdapterLegacy
 import com.protonvpn.android.redesign.search.ui.SearchViewModelDataAdapter
@@ -78,6 +82,8 @@ import com.protonvpn.android.telemetry.TelemetryUploadScheduler
 import com.protonvpn.android.telemetry.TelemetryUploadWorkerScheduler
 import com.protonvpn.android.tv.login.TvLoginPollDelayMs
 import com.protonvpn.android.tv.login.TvLoginViewModel
+import com.protonvpn.android.tv.settings.IsTvAutoConnectFeatureFlagEnabled
+import com.protonvpn.android.tv.settings.IsTvAutoConnectFeatureFlagEnabledImpl
 import com.protonvpn.android.tv.settings.IsTvCustomDnsSettingFeatureFlagEnabled
 import com.protonvpn.android.tv.settings.IsTvCustomDnsSettingFeatureFlagEnabledImpl
 import com.protonvpn.android.tv.settings.IsTvNetShieldSettingFeatureFlagEnabled
@@ -405,6 +411,11 @@ object AppModule {
         fun bindImagePrefetcher(glide: GlideImagePrefetcher): ImagePrefetcher
 
         @Binds
+        fun bindIsProfileAutoOpenPrivateBrowsingFeatureFlagEnabled(
+            impl: IsProfileAutoOpenPrivateBrowsingFeatureFlagEnabledImpl
+        ): IsProfileAutoOpenPrivateBrowsingFeatureFlagEnabled
+
+        @Binds
         fun bindIsBinaryServerStatusFeatureFlagEnabled(
             impl: IsBinaryServerStatusFeatureFlagEnabledImpl
         ): IsBinaryServerStatusFeatureFlagEnabled
@@ -421,6 +432,14 @@ object AppModule {
 
         @Binds
         fun bindIsIPv6FeatureFlagEnabled(impl: IsIPv6FeatureFlagEnabledImpl): IsIPv6FeatureFlagEnabled
+
+        @Binds
+        fun bindsIsPrivateBrowsingAvailable(impl: GetPrivateBrowsingAvailabilityImpl): GetPrivateBrowsingAvailability
+
+        @Binds
+        fun bindIsTvAutoConnectFeatureFlagEnabled(
+            impl: IsTvAutoConnectFeatureFlagEnabledImpl
+        ): IsTvAutoConnectFeatureFlagEnabled
 
         @Binds
         fun bindIsTvCustomDnsSettingFeatureFlagEnabled(

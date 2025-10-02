@@ -45,16 +45,19 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.annotation.AttrRes
-import androidx.annotation.ColorInt
 import androidx.annotation.ColorRes
 import androidx.annotation.DimenRes
 import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
+import androidx.browser.customtabs.CustomTabsClient
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.BlendModeColorFilterCompat
 import androidx.core.graphics.BlendModeCompat
 import androidx.core.view.ViewCompat
 import com.protonvpn.android.R
+import com.protonvpn.android.logging.ProfilesAutoOpen
+import com.protonvpn.android.logging.ProtonLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import me.proton.core.util.kotlin.times
@@ -159,6 +162,39 @@ fun Context.openUrl(url: Uri) {
     }
 }
 
+fun Context.doesDefaultBrowserSupportEphemeralCustomTabs() : Boolean {
+    val defaultCustomTabsBrowser = CustomTabsClient.getPackageName(this, emptyList()) ?: return false
+    return CustomTabsClient.isEphemeralBrowsingSupported(this, defaultCustomTabsBrowser)
+}
+
+fun Context.getEphemeralCustomTabsBrowser(url: Uri) : String? {
+    // Get all apps that can handle VIEW intents and Custom Tab service connections.
+    val browserIntent = Intent(Intent.ACTION_VIEW, url)
+    val browsers = packageManager.queryIntentActivities(
+        browserIntent,
+        PackageManager.MATCH_ALL
+    ).map {
+        it.activityInfo.packageName
+    }
+    return browsers.firstOrNull { CustomTabsClient.isEphemeralBrowsingSupported(this, it) }
+}
+
+fun Context.openPrivateCustomTab(url: Uri, darkTheme: Boolean?, browserPackage: String?) {
+    val intent = CustomTabsIntent.Builder()
+        .setEphemeralBrowsingEnabled(true)
+        .setColorScheme(when (darkTheme) {
+            true -> CustomTabsIntent.COLOR_SCHEME_DARK
+            false -> CustomTabsIntent.COLOR_SCHEME_LIGHT
+            null -> CustomTabsIntent.COLOR_SCHEME_SYSTEM
+        })
+        .build()
+
+    if (browserPackage != null)
+        intent.intent.setPackage(browserPackage)
+
+    intent.launchUrl(this, url)
+}
+
 // Need to drop alpha channel as android won't handle it properly in TextView
 fun Int.toStringHtmlColorNoAlpha() = "#${toHexString().padStart(8, '0').drop(2)}"
 
@@ -175,6 +211,23 @@ fun Context.openVpnSettings() =
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
     )
+
+fun Activity.openWifiSettings(isTv: Boolean = false): Boolean {
+    val action = if (isTv) Settings.ACTION_WIFI_SETTINGS else Settings.ACTION_WIRELESS_SETTINGS
+
+    return executeActionIntent(action)
+}
+
+private fun Activity.executeActionIntent(action: String): Boolean {
+    val intent = Intent(action)
+
+    return if (intent.resolveActivity(packageManager) == null) {
+        false
+    } else {
+        startActivity(intent)
+        true
+    }
+}
 
 fun Activity.haveVpnSettings() =
     Build.VERSION.SDK_INT >= Build.VERSION_CODES.N

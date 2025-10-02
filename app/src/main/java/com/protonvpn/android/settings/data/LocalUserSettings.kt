@@ -98,6 +98,7 @@ data class LocalUserSettings(
     val splitTunneling: SplitTunnelingSettings = SplitTunnelingSettings(),
     val telemetry: Boolean = true,
     val theme: ThemeType = ThemeType.Dark,
+    val tvAutoConnectOnBoot: Boolean = false,
     val vpnAccelerator: Boolean = true,
     val ipV6Enabled: Boolean = true,
     val customDns: CustomDnsSettings = CustomDnsSettings(false)
@@ -131,6 +132,7 @@ fun LocalUserSettings.toLogList(): List<String> {
         "Custom DNS enabled: ${customDns.toggleEnabled.toLog()}",
         "Custom DNS list: ${customDns.rawDnsList.itemCountToLog()}",
         "UI theme: $theme",
+        "TV auto connect on boot: ${tvAutoConnectOnBoot.toLog()}"
     )
     return regularSettings
 }

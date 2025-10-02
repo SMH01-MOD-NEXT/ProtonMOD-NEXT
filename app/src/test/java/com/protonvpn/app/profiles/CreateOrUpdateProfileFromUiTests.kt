@@ -37,6 +37,7 @@ import com.protonvpn.android.profiles.ui.NameScreenState
 import com.protonvpn.android.profiles.ui.SettingsScreenState
 import com.protonvpn.android.profiles.ui.TypeAndLocationScreenState
 import com.protonvpn.android.profiles.usecases.CreateOrUpdateProfileFromUi
+import com.protonvpn.android.profiles.usecases.PrivateBrowsingAvailability
 import com.protonvpn.android.redesign.CountryId
 import com.protonvpn.android.redesign.settings.ui.NatType
 import com.protonvpn.android.redesign.vpn.ConnectIntent
@@ -95,10 +96,11 @@ class CreateOrUpdateProfileFromUiTests {
         natType = NatType.Moderate,
         lanConnections = true,
         lanConnectionsAllowDirect = false,
-        autoOpen = ProfileAutoOpen.None(""),
+        autoOpen = ProfileAutoOpen.None,
         customDnsSettings = CustomDnsSettings(false),
         isAutoOpenNew = true,
         isPrivateDnsActive = false,
+        showPrivateBrowsing = true
     )
     // Matches the screen states above.
     private val testProfile = Profile(
@@ -117,7 +119,7 @@ class CreateOrUpdateProfileFromUiTests {
             profileId = 1L,
             settingsOverrides = settingsScreenState.toSettingsOverrides()
         ),
-        autoOpen = ProfileAutoOpen.None("")
+        autoOpen = ProfileAutoOpen.None
     )
 
     @Before
@@ -151,7 +153,8 @@ class CreateOrUpdateProfileFromUiTests {
             profilesDao,
             currentUser,
             telemetry = profilesTelemetry,
-            wallClock = { testScope.currentTime }
+            wallClock = { testScope.currentTime },
+            getPrivateBrowsingAvailability = { PrivateBrowsingAvailability.AvailableWithDefault }
         )
     }
 

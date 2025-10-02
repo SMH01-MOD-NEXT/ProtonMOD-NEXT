@@ -17,7 +17,7 @@
  * along with ProtonVPN.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.protonvpn.android.redesign.base.ui
+package com.protonvpn.android.base.ui
 
 import androidx.compose.ui.graphics.Color
 import me.proton.core.compose.theme.ProtonColors
@@ -25,6 +25,9 @@ import me.proton.core.compose.theme.ProtonColors
 @Suppress("MagicNumber")
 val ProtonColors.vpnGreen: Color
     get() = if (isDark) Color(0xFF2CFFCC) else Color(0xFF1C9C7C)
+
+val ProtonColors.upsellBackground: Color
+    get() = Color(0xFF191927)
 
 val ProtonColors.upsellGradientStart: Color
     get() = Color(0x6611D8CC)

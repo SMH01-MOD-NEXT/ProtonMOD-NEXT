@@ -22,7 +22,6 @@
 package com.protonvpn.android.tests.profiles
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
 import com.protonvpn.android.annotations.ProtonVpnTestPreview
 import com.protonvpn.android.base.ui.ProtonVpnPreview
 import com.protonvpn.android.profiles.data.ProfileAutoOpen
@@ -109,10 +108,11 @@ fun ProfileFeaturesAndSettingsScreen() {
                 natType = NatType.Strict,
                 lanConnections = true,
                 lanConnectionsAllowDirect = false,
-                autoOpen = ProfileAutoOpen.None("Off"),
+                autoOpen = ProfileAutoOpen.None,
                 customDnsSettings = CustomDnsSettings(false),
                 isAutoOpenNew = false,
                 isPrivateDnsActive = false,
+                showPrivateBrowsing = true,
             ),
             onNext = {},
             onBack = {},
@@ -126,6 +126,8 @@ fun ProfileFeaturesAndSettingsScreen() {
             onOpenCustomDns = {},
             onDisablePrivateDns = {},
             onPrivateDnsLearnMore = {},
+            getAutoOpenAppInfo = { null },
+            getAutoOpenAllAppsInfo = { emptyList() }
         )
     }
 }
@@ -141,10 +143,11 @@ fun ProfileFeaturesAndSettingsScreenCustomDnsConflict() {
                 natType = NatType.Strict,
                 lanConnections = true,
                 lanConnectionsAllowDirect = false,
-                autoOpen = ProfileAutoOpen.None("Off"),
+                autoOpen = ProfileAutoOpen.None,
                 customDnsSettings = CustomDnsSettings(true, listOf("1.1.1.1")),
                 isAutoOpenNew = true,
                 isPrivateDnsActive = false,
+                showPrivateBrowsing = true,
             ),
             onNext = {},
             onBack = {},
@@ -158,6 +161,8 @@ fun ProfileFeaturesAndSettingsScreenCustomDnsConflict() {
             onOpenCustomDns = {},
             onDisablePrivateDns = {},
             onPrivateDnsLearnMore = {},
+            getAutoOpenAppInfo = { null },
+            getAutoOpenAllAppsInfo = { emptyList() }
         )
     }
 }

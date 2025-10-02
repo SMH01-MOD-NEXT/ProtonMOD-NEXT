@@ -20,14 +20,26 @@
 package com.protonvpn.android.profiles.usecases
 
 import android.app.Activity
+import android.content.res.Configuration
+import android.net.Uri
+import android.widget.Toast
+import androidx.annotation.VisibleForTesting
+import com.protonvpn.android.R
+import com.protonvpn.android.logging.ProfilesAutoOpen
+import com.protonvpn.android.logging.ProtonLogger
 import com.protonvpn.android.profiles.data.ProfileAutoOpen
-import com.protonvpn.android.profiles.data.ProfilesDao
+import com.protonvpn.android.redesign.vpn.AnyConnectIntent
 import com.protonvpn.android.ui.ForegroundActivityTracker
+import com.protonvpn.android.utils.doesDefaultBrowserSupportEphemeralCustomTabs
+import com.protonvpn.android.utils.getEphemeralCustomTabsBrowser
+import com.protonvpn.android.utils.openPrivateCustomTab
 import com.protonvpn.android.utils.openUrl
 import com.protonvpn.android.vpn.ConnectTrigger
 import com.protonvpn.android.vpn.VpnState
 import com.protonvpn.android.vpn.VpnStateMonitor
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -36,23 +48,39 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ProfileAutoOpenHandler @Inject constructor(
+class ProfileAutoOpenHandler(
     val mainScope: CoroutineScope,
-    val vpnStateMonitor: VpnStateMonitor,
-    val profilesDao: ProfilesDao,
-    val foregroundActivityTracker: ForegroundActivityTracker,
+    val newSessionEvent: SharedFlow<Pair<AnyConnectIntent, ConnectTrigger>>,
+    val status: StateFlow<VpnStateMonitor.Status>,
+    val getAutoOpenByProfileId: suspend (Long) -> ProfileAutoOpen?,
+    val foregroundActivityFlow: StateFlow<Activity?>,
+    val getActivityNightMode: (Activity) -> Int = { activity ->
+        activity.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+    }
 ) {
+    @Inject constructor(
+        mainScope: CoroutineScope,
+        vpnStateMonitor: VpnStateMonitor,
+        getProfileById: GetProfileById,
+        foregroundActivityTracker: ForegroundActivityTracker,
+    ) : this(
+        mainScope = mainScope,
+        newSessionEvent = vpnStateMonitor.newSessionEvent,
+        status = vpnStateMonitor.status,
+        getAutoOpenByProfileId = { getProfileById(it)?.autoOpen },
+        foregroundActivityFlow = foregroundActivityTracker.foregroundActivityFlow,
+    )
 
     fun start() {
         mainScope.launch {
-            vpnStateMonitor.newSessionEvent.collectLatest { (connectIntent, trigger) ->
+            newSessionEvent.collectLatest { (connectIntent, trigger) ->
                 val profileId = connectIntent.profileId
                 if (profileId != null && isAutoOpenTrigger(trigger)) {
                     val activity = withTimeoutOrNull(5000) {
-                        foregroundActivityTracker.foregroundActivityFlow.first { it != null }
+                        foregroundActivityFlow.first { it != null }
                     }
                     if (activity != null) {
-                        vpnStateMonitor.status.first {
+                        status.first {
                             it.state == VpnState.Connected && profileId == it.connectIntent?.profileId
                         }.run {
                             handleAutoOpenForProfile(activity, profileId)
@@ -74,16 +102,55 @@ class ProfileAutoOpenHandler @Inject constructor(
     }
 
     private suspend fun handleAutoOpenForProfile(activity: Activity, profileId: Long) {
-        profilesDao.getProfileById(profileId)?.let { profile ->
-            when (profile.autoOpen) {
+        getAutoOpenByProfileId(profileId)?.let { autoOpen ->
+            when (autoOpen) {
                 is ProfileAutoOpen.None -> {}
-                is ProfileAutoOpen.App ->
-                    activity.packageManager.getLaunchIntentForPackage(profile.autoOpen.packageName)?.let { intent ->
+                is ProfileAutoOpen.App -> {
+                    val intent = activity.packageManager.getLaunchIntentForPackage(autoOpen.packageName)
+                    if (intent != null) {
                         activity.startActivity(intent)
+                    } else {
+                        Toast.makeText(
+                            activity,
+                            R.string.profile_auto_open_app_failed_to_launch,
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
+                }
                 is ProfileAutoOpen.Url ->
-                    activity.openUrl(profile.autoOpen.url)
+                    if (autoOpen.openInPrivateMode) {
+                        openUrlInPrivateMode(activity, autoOpen.url)
+                    } else {
+                        activity.openUrl(autoOpen.url)
+                    }
             }
+        }
+    }
+
+    @VisibleForTesting
+    fun openUrlInPrivateMode(activity: Activity, url: Uri) {
+        val defaultBrowserSupport = activity.doesDefaultBrowserSupportEphemeralCustomTabs()
+        val browserPackage =
+            if (defaultBrowserSupport) null
+            else activity.getEphemeralCustomTabsBrowser(url)
+        if (!defaultBrowserSupport && browserPackage == null) {
+            ProtonLogger.log(
+                ProfilesAutoOpen,
+                "No browser found supporting private custom tabs"
+            )
+        } else {
+            val darkTheme = when (getActivityNightMode(activity)) {
+                Configuration.UI_MODE_NIGHT_YES -> true
+                Configuration.UI_MODE_NIGHT_NO -> false
+                else -> null
+            }
+
+            if (browserPackage != null) {
+                ProtonLogger.log(ProfilesAutoOpen, "Opening private custom tab in $browserPackage")
+            } else {
+                ProtonLogger.log(ProfilesAutoOpen, "Opening private custom tab in default browser")
+            }
+            activity.openPrivateCustomTab(url, darkTheme, browserPackage)
         }
     }
 }

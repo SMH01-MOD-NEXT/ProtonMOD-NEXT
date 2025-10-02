@@ -22,7 +22,6 @@ package com.protonvpn.android.logging
 import android.app.ActivityManager.RunningAppProcessInfo
 import com.protonvpn.android.auth.data.VpnUser
 import com.protonvpn.android.models.profiles.Profile
-import com.protonvpn.android.observability.AppExitTotal
 import com.protonvpn.android.redesign.CountryId
 import com.protonvpn.android.redesign.vpn.AnyConnectIntent
 import com.protonvpn.android.redesign.vpn.ConnectIntent
@@ -125,3 +124,4 @@ fun Int.toImportanceLog() =
 
         else -> "unknown"
     }
+

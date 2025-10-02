@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Text
 import com.protonvpn.android.R
 import com.protonvpn.android.components.BaseTvActivity
+import com.protonvpn.android.tv.settings.TvSettingDescriptionRow
 import com.protonvpn.android.tv.settings.TvSettingsMainToggleLayout
 import com.protonvpn.android.tv.settings.TvSettingsReconnectDialog
 import com.protonvpn.android.tv.ui.TvUiConstants
@@ -87,13 +88,8 @@ private fun TvSettingsLanConnections(
         onToggled = onToggled,
     ) {
         item {
-            Text(
+            TvSettingDescriptionRow(
                 stringResource(R.string.settings_advanced_allow_lan_description_tv),
-                style = ProtonTheme.typography.body2Regular,
-                color = ProtonTheme.colors.textWeak,
-                modifier = Modifier
-                    .padding(horizontal = TvUiConstants.SelectionPaddingHorizontal)
-                    .padding(top = 12.dp, bottom = 16.dp)
             )
         }
     }

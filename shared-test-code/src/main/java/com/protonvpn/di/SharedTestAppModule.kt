@@ -176,7 +176,6 @@ class SharedTestAppModule {
 
     @Provides
     @Singleton
-    @SharedOkHttpClient
     internal fun provideOkHttpClient(): OkHttpClient {
         val clientBuilder = OkHttpClient.Builder()
         TestSettings.handshakeCertificatesOverride?.let {
