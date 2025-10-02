@@ -19,6 +19,7 @@
 
 package com.protonvpn.mocks
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -42,6 +43,7 @@ import java.util.UUID
  * A temporary fake WorkManager implementation for UI tests.
  * See VPNAND-1184 and CP-4334.
  */
+@SuppressLint("RestrictedApi")
 class FakeWorkManager : WorkManager() {
 
     class FakeOperation : Operation {
@@ -67,6 +69,7 @@ class FakeWorkManager : WorkManager() {
 
         override fun enqueue(): Operation = FakeOperation()
 
+        @SuppressLint("RestrictedApi")
         override fun combineInternal(continuations: MutableList<WorkContinuation>): WorkContinuation {
             TODO("Not yet implemented")
         }
