@@ -18,10 +18,19 @@
  */
 package com.protonvpn.android
 
-import android.R.attr.button
+import android.app.Activity
 import android.app.Application
 import android.app.ApplicationExitInfo
 import android.content.Context
+import android.content.res.ColorStateList
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.view.View
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
 import com.protonvpn.android.api.DohEnabled
 import com.protonvpn.android.app.AppExitObservability
 import com.protonvpn.android.app.AppStartExitLogger
@@ -76,8 +85,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import go.Seq
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.launch
 import me.proton.core.accountmanager.data.AccountStateHandler
 import me.proton.core.eventmanager.data.CoreEventManagerStarter
 import me.proton.core.humanverification.presentation.HumanVerificationStateHandler
@@ -87,18 +98,6 @@ import me.proton.core.userrecovery.presentation.compose.DeviceRecoveryHandler
 import me.proton.core.userrecovery.presentation.compose.DeviceRecoveryNotificationSetup
 import me.proton.core.util.kotlin.CoreLogger
 import java.util.concurrent.Executors
-import android.app.Activity
-import android.content.res.ColorStateList
-import android.os.Bundle
-import android.view.View
-import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
-import androidx.fragment.app.FragmentManager
-import com.protonvpn.android.profiles.data.ProfileAutoOpen
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 
 
 /**
@@ -159,6 +158,12 @@ open class ProtonApplication : Application() {
     protected var lastMainProcessExitReason: Int? = null
 
     override fun onCreate() {
+        if (BuildConfig.DEBUG) {
+            val reporter = CrashReporter(this, Constants.TG_BOT_TOKEN, Constants.TG_CHAT_ID)
+            CrashReporter.init(this, Constants.TG_BOT_TOKEN, Constants.TG_CHAT_ID)
+            reporter.handleStartupLogs()
+            reporter.sendPendingCrashes()
+        }
         installCertificateTransparencySupport(
             excludedCommonNames = if (BuildConfig.DEBUG) listOf("localhost") else emptyList()
         )
@@ -168,7 +173,6 @@ open class ProtonApplication : Application() {
 
         initPreferences()
         initSentry(this)
-
         if (isMainProcess()) {
             VpnLeakCanary.init(this)
             initLogger()

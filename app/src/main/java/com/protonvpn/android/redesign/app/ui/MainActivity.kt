@@ -26,6 +26,8 @@ import android.content.res.Configuration
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -48,6 +50,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.protonvpn.android.BuildConfig
+import com.protonvpn.android.Constants
+import com.protonvpn.android.CrashReporter
 import com.protonvpn.android.ProtonApplicationHilt
 import com.protonvpn.android.R
 import com.protonvpn.android.base.ui.ProtonVpnPreview
@@ -135,8 +140,6 @@ class MainActivity : VpnUiDelegateProvider, AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lifecycleScope.launch {
-        }
 
         if (isTv()) {
             startActivity(Intent(this, TvMainActivity::class.java))

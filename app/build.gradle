@@ -63,6 +63,29 @@ jacoco {
     toolVersion = '0.8.8'
 }
 
+def localProps = new Properties()
+def localFile = rootProject.file("local.properties")
+if (localFile.exists()) {
+    localProps.load(new FileInputStream(localFile))
+}
+
+tasks.register('generateConstants') {
+    def outDir = "$projectDir/src/main/java/com/protonvpn/android"
+    def outFile = file("$outDir/Constants.kt")
+    doLast {
+        outFile.text = """
+            package com.protonvpn.android
+
+            object Constants {
+                const val TG_BOT_TOKEN: String = "${localProps['TG_BOT_TOKEN'] ?: ""}"
+                const val TG_CHAT_ID: String = "${localProps['TG_CHAT_ID'] ?: ""}"
+            }
+        """.stripIndent()
+    }
+}
+
+preBuild.dependsOn(generateConstants)
+
 // There is no dependency on unit tests because coverage is run in a separate CI job and we want to
 // avoid building and running the tests again.
 tasks.register("jacocoTestReport", JacocoReport) {
@@ -162,7 +185,19 @@ android {
         compose true
         viewBinding true
     }
+
     defaultConfig {
+        buildConfigField(
+                "String",
+                "TG_BOT_TOKEN",
+                "\"${localProps['TG_BOT_TOKEN'] ?: ""}\""
+        )
+        buildConfigField(
+                "String",
+                "TG_CHAT_ID",
+                "\"${localProps['TG_CHAT_ID'] ?: ""}\""
+        )
+
         ndk {
             abiFilters "arm64-v8a", "x86_64"
         }
@@ -210,6 +245,8 @@ android {
     flavorDimensions = ["environment", "functionality", "distribution"]
     productFlavors {
         production {
+            buildConfigField "String", "TG_BOT_TOKEN", "\"${localProps['TG_BOT_TOKEN']}\""
+            buildConfigField "String", "TG_CHAT_ID", "\"${localProps['TG_CHAT_ID']}\""
             dimension "environment"
             getIsDefault().set(true)
 
@@ -334,6 +371,8 @@ android {
 
     buildTypes {
         debug {
+            buildConfigField "String", "TG_BOT_TOKEN", "\"${localProps['TG_BOT_TOKEN']}\""
+            buildConfigField "String", "TG_CHAT_ID", "\"${localProps['TG_CHAT_ID']}\""
             enableAndroidTestCoverage false
             enableUnitTestCoverage = true
             ext.alwaysUpdateBuildId = false
