@@ -26,6 +26,7 @@ import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.View
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -54,6 +55,7 @@ import com.protonvpn.android.notifications.NotificationPermissionManager
 import com.protonvpn.android.profiles.usecases.PopulateInitialProfiles
 import com.protonvpn.android.profiles.usecases.ProfileAutoOpenHandler
 import com.protonvpn.android.profiles.usecases.UpdateProfileLastConnected
+import com.protonvpn.android.proxy.VlessManager
 import com.protonvpn.android.quicktile.QuickTileDataStoreUpdater
 import com.protonvpn.android.redesign.recents.usecases.ConnectingUpdatesRecents
 import com.protonvpn.android.redesign.recents.usecases.RecentsListValidator
@@ -205,19 +207,22 @@ open class ProtonApplication : Application() {
 
                                 fun updateStyle(enabled: Boolean) {
                                     button.text = if (enabled) "Прокси включён" else "Использовать прокси"
-                                    if (enabled) {
-                                        button.backgroundTintList = ColorStateList.valueOf(
-                                            ContextCompat.getColor(activity, com.google.android.material.R.color.material_dynamic_primary50)
-                                        )
-                                        button.setTextColor(ContextCompat.getColor(activity, android.R.color.white))
-                                    } else {
-                                        button.backgroundTintList = ColorStateList.valueOf(
-                                            ContextCompat.getColor(activity, com.google.android.material.R.color.material_dynamic_neutral90)
-                                        )
-                                        button.setTextColor(ContextCompat.getColor(activity, android.R.color.black))
-                                    }
-                                }
 
+                                    val bgColor = if (enabled) {
+                                        ContextCompat.getColor(activity, R.color.proxy_enabled_bg)
+                                    } else {
+                                        ContextCompat.getColor(activity, R.color.proxy_disabled_bg)
+                                    }
+
+                                    val textColor = if (enabled) {
+                                        ContextCompat.getColor(activity, android.R.color.white)
+                                    } else {
+                                        ContextCompat.getColor(activity, android.R.color.black)
+                                    }
+
+                                    button.backgroundTintList = ColorStateList.valueOf(bgColor)
+                                    button.setTextColor(textColor)
+                                }
                                 updateStyle(prefs.getBoolean("proxy_enabled", false))
 
                                 button.setOnClickListener {
@@ -226,10 +231,27 @@ open class ProtonApplication : Application() {
                                     updateStyle(newState)
 
                                     val app = activity.application as ProtonApplicationHilt
+                                    val vlessManager = VlessManager.getInstance(app)
 
-                                    if (!newState) {
-                                        app.appScope.launch(Dispatchers.IO) {
-                                            app.okHttpClient.connectionPool.evictAll()
+                                    if (newState) {
+                                        // Включаем прокси
+                                        if (!vlessManager.isRunning()) {
+                                            // Запускаем в фоне, не блокируя UI
+                                            app.appScope.launch(Dispatchers.IO) {
+                                                vlessManager.start()
+                                            }
+                                        } else {
+                                            Log.d("ProxyToggle", "VlessManager уже запущен, повторный старт не требуется")
+                                        }
+                                    } else {
+                                        // Выключаем прокси
+                                        if (vlessManager.isRunning()) {
+                                            app.appScope.launch(Dispatchers.IO) {
+                                                app.okHttpClient.connectionPool.evictAll()
+                                            }
+                                        } else {
+                                            Log.d("ProxyToggle", "VlessManager уже остановлен, действие отменено")
+                                            // Здесь можно даже не чистить connectionPool, если менеджер не работал
                                         }
                                     }
                                 }

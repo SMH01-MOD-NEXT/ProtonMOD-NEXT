@@ -26,6 +26,7 @@ import android.util.Base64
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -39,6 +40,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import java.io.File
+import java.io.IOException
+import java.io.InterruptedIOException
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.net.Socket
@@ -51,6 +54,8 @@ class VlessManager private constructor(private val context: Context) {
 
     private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var xrayProcess: Process? = null
+    private var outReaderJob: Job? = null
+    private var errReaderJob: Job? = null
 
     // --- State Properties ---
     @Volatile private var isRunning = false
@@ -71,7 +76,6 @@ class VlessManager private constructor(private val context: Context) {
 
         coroutineScope.launch {
             try {
-                // Set initial state flags
                 isRunning = true
                 isReady = false
                 errorMessage = null
@@ -79,49 +83,37 @@ class VlessManager private constructor(private val context: Context) {
                 Log.d(TAG, "State -> Starting. Checking for Xray binary...")
 
                 if (!xrayBinary.exists() || !xrayBinary.canExecute()) {
-                    throw Exception("Xray binary not found or not executable at: ${xrayBinary.absolutePath}. Ensure it is included in jniLibs.")
+                    throw Exception("Xray binary not found or not executable at: ${xrayBinary.absolutePath}")
                 }
                 Log.d(TAG, "Binary found and executable: ${xrayBinary.absolutePath}")
 
                 Log.d(TAG, "State -> Pinging. Fetching and decoding configs...")
                 val configs = fetchAndDecodeConfigs()
-                Log.d(TAG, "Found ${configs.size} configurations. Finding the best server...")
-
                 val bestServer = findBestServer(configs)
                     ?: throw Exception("No responsive VLESS servers found after pinging.")
 
                 val host = bestServer.extractHost()
-                Log.d(TAG, "Found best server: ${bestServer.optString("ps", "Unnamed")} with host $host")
+                Log.d(TAG, "Best server: ${bestServer.optString("ps", "Unnamed")} ($host)")
 
-                // [FIX] Remove both routing and dns blocks to prevent crashes without geoip/geosite files.
-                if (bestServer.has("routing")) {
-                    bestServer.remove("routing")
-                    Log.d(TAG, "'routing' block removed to avoid geoip/geosite errors.")
-                }
-                if (bestServer.has("dns")) {
-                    bestServer.remove("dns")
-                    Log.d(TAG, "'dns' block removed to avoid geoip/geosite errors.")
-                }
+                // Remove routing/dns blocks to avoid geoip/geosite errors
+                bestServer.remove("routing")
+                bestServer.remove("dns")
 
+                // Patch TLS SNI if missing
                 val outbound = bestServer.getJSONArray("outbounds").getJSONObject(0)
-                if (outbound.has("streamSettings")) {
-                    val streamSettings = outbound.getJSONObject("streamSettings")
-                    if (streamSettings.optString("security") == "tls" && streamSettings.has("tlsSettings")) {
-                        val tlsSettings = streamSettings.getJSONObject("tlsSettings")
-                        if (!tlsSettings.has("serverName")) {
+                outbound.optJSONObject("streamSettings")?.let { streamSettings ->
+                    if (streamSettings.optString("security") == "tls") {
+                        val tlsSettings = streamSettings.optJSONObject("tlsSettings")
+                        if (tlsSettings != null && !tlsSettings.has("serverName")) {
                             val sni = streamSettings.optJSONObject("wsSettings")?.optString("host")
                                 ?: bestServer.optString("sni", "")
                             if (sni.isNotEmpty()) {
                                 tlsSettings.put("serverName", sni)
-                                Log.d(TAG, "Patched missing 'serverName' (SNI) with: $sni")
-                            } else {
-                                Log.w(TAG, "TLS is enabled, but 'serverName' (SNI) is missing and could not be inferred.")
+                                Log.d(TAG, "Patched missing SNI with: $sni")
                             }
                         }
                     }
                 }
-
-                Log.d(TAG, "Selected server config: ${bestServer.toString(2)}")
 
                 val configFile = File(context.filesDir, "config.json")
                 configFile.writeText(bestServer.toString(4))
@@ -130,50 +122,56 @@ class VlessManager private constructor(private val context: Context) {
                 startXray()
 
                 waitForProxyReady()
-                Log.d(TAG, "Local proxy on port $PROXY_PORT confirmed to be ready.")
+                Log.d(TAG, "Local proxy on port $PROXY_PORT confirmed ready.")
 
                 if (testProxyConnection()) {
-                    delay(100) // User-requested delay
+                    delay(100)
                     isReady = true
                     bestServerHost = host
-                    Log.d(TAG, "State -> Ready. Xray process started and tested successfully.")
+                    Log.d(TAG, "State -> Ready. Xray started successfully.")
                 } else {
                     throw Exception("Proxy connection test failed after setup.")
                 }
 
-            } catch (e: java.io.InterruptedIOException) {
-                // Это штатная ситуация при отмене чтения/остановке процесса
-                Log.d(TAG, "Xray stream interrupted (normal on stop).")
-                stop()
             } catch (e: Exception) {
                 Log.e(TAG, "Error in VlessManager", e)
-                errorMessage = e.message ?: "Unknown error in VlessManager"
-                restart() // Ensure cleanup on failure
+                errorMessage = e.message ?: "Unknown error"
+                stop()
             }
         }
     }
 
-
     fun stop() {
         Log.d(TAG, "Stop command received.")
-        xrayProcess?.destroyForcibly()
+
+        // Cancel readers first
+        outReaderJob?.cancel()
+        errReaderJob?.cancel()
+        runBlocking {
+            try { outReaderJob?.join() } catch (_: Exception) {}
+            try { errReaderJob?.join() } catch (_: Exception) {}
+        }
+        outReaderJob = null
+        errReaderJob = null
+
+        // Stop process
+        xrayProcess?.let { p ->
+            try {
+                p.destroy()
+                if (!p.waitFor(500, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                    p.destroyForcibly()
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Error stopping Xray: ${e.message}")
+            }
+        }
         xrayProcess = null
+
         isRunning = false
         isReady = false
         bestServerHost = null
-        // Error message is preserved until next start for inspection
-        Log.d(TAG, "State -> Stopped. Xray process has been terminated.")
+        Log.d(TAG, "State -> Stopped.")
     }
-
-    fun restart() {
-        Log.d(TAG, "Restarting VlessManager...")
-        stop()
-        runBlocking {
-            delay(50)
-        }
-        start()
-    }
-
 
     fun destroy() {
         Log.d(TAG, "Destroying VlessManager instance.")
@@ -187,136 +185,129 @@ class VlessManager private constructor(private val context: Context) {
     fun getBestServerHost(): String? = bestServerHost
     fun getErrorMessage(): String? = errorMessage
 
-
     private suspend fun testProxyConnection(): Boolean = withContext(Dispatchers.IO) {
-        Log.d(TAG, "Initiating proxy connection test...")
-
         val socksProxy = Proxy(Proxy.Type.SOCKS, InetSocketAddress("127.0.0.1", PROXY_PORT))
         val client = OkHttpClient.Builder()
             .proxy(socksProxy)
             .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
             .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
             .build()
-        val request = Request.Builder()
-            .url("https://api.ipify.org")
-            .build()
+        val request = Request.Builder().url("https://api.ipify.org").build()
 
         try {
-            val response = client.newCall(request).execute()
-            if (response.isSuccessful) {
-                val ip = response.body?.string()
-                Log.d(TAG, "Proxy test SUCCESS! External IP: $ip")
-                return@withContext true
-            } else {
-                Log.e(TAG, "Proxy test FAILED! Response code: ${response.code}, message: ${response.message}")
-                return@withContext false
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    Log.d(TAG, "Proxy test SUCCESS! IP: ${response.body?.string()}")
+                    return@withContext true
+                }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Proxy test FAILED with an exception.", e)
-            return@withContext false
+            Log.e(TAG, "Proxy test FAILED", e)
         }
+        false
     }
 
     private suspend fun fetchAndDecodeConfigs(): List<JSONObject> = withContext(Dispatchers.IO) {
         val client = OkHttpClient()
-        val request = Request.Builder().url(GITHUB_CONFIG_URL).build()
-        Log.d(TAG, "Fetching configs from: $GITHUB_CONFIG_URL")
+        val response = client.newCall(Request.Builder().url(GITHUB_CONFIG_URL).build()).execute()
+        if (!response.isSuccessful) throw Exception("Failed to download configs. Code: ${response.code}")
 
-        val response = client.newCall(request).execute()
-        if (!response.isSuccessful) throw Exception("Failed to download configs from GitHub. Code: ${response.code}")
-
-        val responseBody = response.body?.string() ?: throw Exception("Empty response body from GitHub")
-        Log.d(TAG, "Configs downloaded, decoding and parsing JSON configs...")
-
-        responseBody.lines().mapNotNull { base64Line ->
-            val trimmedLine = base64Line.trim()
-            if (trimmedLine.isNotEmpty()) {
+        val body = response.body?.string() ?: throw Exception("Empty response body")
+        body.lines().mapNotNull { line ->
+            val trimmed = line.trim()
+            if (trimmed.isNotEmpty()) {
                 try {
-                    val decodedBytes = Base64.decode(trimmedLine, Base64.DEFAULT)
-                    val jsonString = String(decodedBytes, Charsets.UTF_8)
-                    JSONObject(jsonString)
+                    val decoded = Base64.decode(trimmed, Base64.DEFAULT)
+                    JSONObject(String(decoded, Charsets.UTF_8))
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to decode/parse JSON from Base64 line: $trimmedLine", e)
+                    Log.e(TAG, "Failed to decode config line", e)
                     null
                 }
-            } else {
-                null
-            }
+            } else null
         }
     }
 
     private suspend fun findBestServer(configs: List<JSONObject>): JSONObject? = withContext(Dispatchers.IO) {
-        if (configs.isEmpty()) {
-            return@withContext null
-        }
-        Log.d(TAG, "Pinging ${configs.size} servers in parallel...")
-
-        val pingResults = configs.map { config ->
+        if (configs.isEmpty()) return@withContext null
+        val results = configs.map { config ->
             async {
-                var pingTime = PING_TIMEOUT_MS + 1L
-                val serverName = config.optString("ps", "Unnamed")
-
+                var ping = PING_TIMEOUT_MS + 1L
                 try {
                     val host = config.extractHost()
                     val port = config.extractPort()
-
-                    if (coroutineContext.isActive) {
-                        pingTime = measureTimeMillis {
-                            Socket().use { socket ->
-                                socket.connect(InetSocketAddress(host, port), PING_TIMEOUT_MS)
-                            }
-                        }
-                        Log.d(TAG, "Ping for '$serverName' ($host): $pingTime ms")
+                    ping = measureTimeMillis {
+                        Socket().use { it.connect(InetSocketAddress(host, port), PING_TIMEOUT_MS) }
                     }
-                } catch (e: Exception) {
-                    Log.w(TAG, "Could not extract address/port or ping server '$serverName'")
-                }
-                config to pingTime
+                    Log.d(TAG, "Ping ${config.optString("ps", host)}: $ping ms")
+                } catch (_: Exception) {}
+                config to ping
             }
         }.awaitAll()
-
-        val bestResult = pingResults.filter { it.second <= PING_TIMEOUT_MS }.minByOrNull { it.second }
-        Log.d(TAG, "Ping complete. Best server: ${bestResult?.first?.optString("ps") ?: "not found"}")
-        bestResult?.first
+        results.filter { it.second <= PING_TIMEOUT_MS }.minByOrNull { it.second }?.first
     }
-
     private fun startXray() {
         val configFile = File(context.filesDir, "config.json")
         if (!configFile.exists()) throw Exception("Xray config file not found")
 
         val command = listOf(xrayBinary.absolutePath, "run", "-c", configFile.absolutePath)
+        xrayProcess = ProcessBuilder(command).start()
 
-        val processBuilder = ProcessBuilder(command)
-        xrayProcess = processBuilder.start()
-
-        coroutineScope.launch {
-            xrayProcess?.inputStream?.bufferedReader()?.useLines { lines ->
-                lines.forEach { line -> Log.i(TAG, "[Xray-out] $line") }
+        // Чтение stdout
+        outReaderJob = coroutineScope.launch {
+            val reader = xrayProcess?.inputStream?.bufferedReader() ?: return@launch
+            try {
+                while (isActive) {
+                    val line = reader.readLine() ?: break
+                    Log.i(TAG, "[Xray-out] $line")
+                }
+            } catch (e: InterruptedIOException) {
+                Log.i(TAG, "Xray stdout interrupted (normal on stop)")
+            } catch (e: IOException) {
+                Log.w(TAG, "Xray stdout error: ${e.message}")
+            } finally {
+                try { reader.close() } catch (_: Exception) {}
             }
         }
-        coroutineScope.launch {
-            xrayProcess?.errorStream?.bufferedReader()?.useLines { lines ->
-                lines.forEach { line -> Log.e(TAG, "[Xray-err] $line") }
+
+        // Чтение stderr
+        errReaderJob = coroutineScope.launch {
+            val reader = xrayProcess?.errorStream?.bufferedReader() ?: return@launch
+            try {
+                while (isActive) {
+                    val line = reader.readLine() ?: break
+                    Log.e(TAG, "[Xray-err] $line")
+                }
+            } catch (e: InterruptedIOException) {
+                Log.i(TAG, "Xray stderr interrupted (normal on stop)")
+            } catch (e: IOException) {
+                Log.w(TAG, "Xray stderr error: ${e.message}")
+            } finally {
+                try { reader.close() } catch (_: Exception) {}
             }
         }
 
         Log.d(TAG, "Xray process started with command: ${command.joinToString(" ")}")
     }
 
-    private suspend fun waitForProxyReady(timeoutMs: Long = 10000L, intervalMs: Long = 200L) = withContext(Dispatchers.IO) {
+
+    private suspend fun waitForProxyReady(
+        timeoutMs: Long = 10_000L,
+        intervalMs: Long = 200L
+    ) = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
+        while (isActive && System.currentTimeMillis() - startTime < timeoutMs) {
             try {
                 Socket().use { socket ->
                     socket.connect(InetSocketAddress("127.0.0.1", PROXY_PORT), 100)
                 }
                 return@withContext
-            } catch (e: Exception) {
-                delay(intervalMs)
+            } catch (_: Exception) {
+                if (isActive) delay(intervalMs) else break
             }
         }
-        throw Exception("Proxy on port $PROXY_PORT did not become available within ${timeoutMs}ms.")
+        throw IllegalStateException("Proxy on port $PROXY_PORT did not become available within ${timeoutMs}ms.")
     }
+
 
     private fun JSONObject.extractHost(): String = this.getJSONArray("outbounds").getJSONObject(0)
         .getJSONObject("settings").getJSONArray("vnext").getJSONObject(0).getString("address")
