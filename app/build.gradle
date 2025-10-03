@@ -168,7 +168,7 @@ android {
         }
         applicationId appId
         minSdkVersion rootProject.ext.minSdkVersion // See also build flavors.
-        targetSdkVersion 35
+        targetSdkVersion 36
         multiDexEnabled true
         versionName helpers.fullVersionName
         versionCode helpers.getVersionCode()
