@@ -102,12 +102,12 @@ class ChangeServerViewStateFlow @Inject constructor(
             Triple(vpnStatus, isChanging, hasTroubleConnecting)
         }.flatMapLatest { (vpnStatus, isChanging, hasTroubleConnecting) ->
             when {
-                vpnStatus.state.isEstablishingConnection && hasTroubleConnecting ->
+                vpnStatus.state.isEstablishingConnection ->
                     flowOf(ChangeServerViewState.Unlocked)
                 vpnStatus.state.isEstablishingConnection && isChanging ->
                     flowOf(ChangeServerViewState.Disabled)
                 vpnStatus.state is VpnState.Connected ->
-                    restrictedStateFlow
+                    flowOf(ChangeServerViewState.Unlocked)
                 else ->
                     flowOf(null)
             }
