@@ -20,6 +20,7 @@ package com.protonvpn.android.vpn.wireguard
  */
 
 import android.content.Context
+import android.util.Log
 import com.protonvpn.android.auth.usecase.CurrentUser
 import com.protonvpn.android.concurrency.VpnDispatcherProvider
 import com.protonvpn.android.logging.ConnError
@@ -52,7 +53,9 @@ import com.wireguard.android.backend.BackendException
 import com.wireguard.android.backend.GoBackend
 import com.wireguard.android.backend.Tunnel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -61,6 +64,7 @@ import kotlinx.coroutines.withContext
 import me.proton.core.network.data.di.SharedOkHttpClient
 import me.proton.core.network.domain.NetworkManager
 import me.proton.core.network.domain.NetworkStatus
+import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -133,6 +137,15 @@ class WireguardBackend @Inject constructor(
     }
 
     override suspend fun connect(connectionParams: ConnectionParams) {
+        val prefs = context.getSharedPreferences("protonmod_prefs", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("proxy_enabled", false)) {
+            prefs.edit().putBoolean("proxy_enabled", false).apply()
+            withContext(Dispatchers.IO) {
+                okHttp?.connectionPool?.evictAll()
+            }
+            Log.d("ProxyToggle", "Proxy disabled on VPN connect")
+        }
+
         super.connect(connectionParams)
 
         // We need to start ignoring state changes for the old connection
@@ -252,6 +265,11 @@ class WireguardBackend @Inject constructor(
         }
         withContext(wireGuardIo) {
             backend.setState(testTunnel, Tunnel.State.DOWN, null)
+        }
+        val prefs = context.getSharedPreferences("protonmod_prefs", Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("proxy_enabled", false)) {
+            prefs.edit().putBoolean("proxy_enabled", true).apply()
+            Log.d("ProxyToggle", "Proxy re-enabled on VPN disconnect")
         }
     }
 

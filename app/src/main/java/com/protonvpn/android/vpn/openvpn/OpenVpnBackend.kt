@@ -30,9 +30,9 @@ import com.protonvpn.android.models.config.TransmissionProtocol
 import com.protonvpn.android.models.config.VpnProtocol
 import com.protonvpn.android.models.vpn.ConnectionParams
 import com.protonvpn.android.models.vpn.ConnectionParamsOpenVpn
-import com.protonvpn.android.servers.Server
 import com.protonvpn.android.redesign.vpn.AnyConnectIntent
 import com.protonvpn.android.redesign.vpn.usecases.SettingsForConnection
+import com.protonvpn.android.servers.Server
 import com.protonvpn.android.ui.ForegroundActivityTracker
 import com.protonvpn.android.ui.home.GetNetZone
 import com.protonvpn.android.utils.Log
@@ -51,6 +51,8 @@ import de.blinkt.openvpn.core.LogItem
 import de.blinkt.openvpn.core.OpenVPNService.PAUSE_VPN
 import de.blinkt.openvpn.core.VpnStatus
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import me.proton.core.network.data.di.SharedOkHttpClient
 import me.proton.core.network.domain.NetworkManager
 import okhttp3.OkHttpClient
@@ -120,6 +122,16 @@ class OpenVpnBackend @Inject constructor(
     }
 
     override suspend fun connect(connectionParams: ConnectionParams) {
+
+        val prefs = appContext.getSharedPreferences("protonmod_prefs", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("proxy_enabled", false)) {
+            prefs.edit().putBoolean("proxy_enabled", false).apply()
+            withContext(Dispatchers.IO) {
+                okHttp?.connectionPool?.evictAll()
+            }
+            android.util.Log.d("ProxyToggle", "Proxy disabled on OpenVPN connect")
+        }
+
         super.connect(connectionParams)
         startOpenVPN(null, connectionParamsUuid = connectionParams.uuid)
     }
@@ -129,6 +141,11 @@ class OpenVpnBackend @Inject constructor(
         // disconnected state - request pause regardless of the state
         startOpenVPN(PAUSE_VPN, connectionParamsUuid = null)
         waitForDisconnect()
+        val prefs = appContext.getSharedPreferences("protonmod_prefs", Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("proxy_enabled", false)) {
+            prefs.edit().putBoolean("proxy_enabled", true).apply()
+            android.util.Log.d("ProxyToggle", "Proxy re-enabled on OpenVPN disconnect")
+        }
     }
 
     private fun startOpenVPN(action: String?, connectionParamsUuid: UUID?) {
