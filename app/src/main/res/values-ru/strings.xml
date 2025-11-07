@@ -59,7 +59,8 @@
     <string name="errorUserDelinquent"><![CDATA[Ваш аккаунт имеет не оплаченный счет. Пожалуйста, оплатите все неоплаченные счета на &#160;<a href="https://account.protonvpn.com">account.protonvpn.com</a>]]></string>
     <string name="errorMaxSessions">Вы одновременно подключили максимальное разрешенное для вашего аккаунта количество устройств. Чтобы подключить больше устройств, пожалуйста, улучшите свой тариф Proton VPN.</string>
     <string name="listItemMaintenance">На техобслуживании</string>
-    <string name="proxy_toggle">Использовать прокси</string>
+    <string name="proxy_toggle_off">Использовать прокси</string>
+    <string name="proxy_toggle_on">Прокси включён</string>
     <string name="insufficientPermissionsTitle">Требуется действие пользователя</string>
     <string name="insufficientPermissionsDetails">Не удалось установить VPN соединение автоматически. Пожалуйста, подключитесь вручную один раз, чтобы предоставить разрешения.</string>
     <string name="log_title">Журнал</string>
