@@ -28,6 +28,7 @@ import com.google.gson.annotations.SerializedName
 import com.protonvpn.android.auth.usecase.OnSessionClosed
 import com.protonvpn.android.models.profiles.Profile
 import com.protonvpn.android.servers.Server
+import com.protonvpn.android.utils.ServerManager
 import com.protonvpn.android.utils.Storage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -44,7 +45,7 @@ import javax.inject.Singleton
 class RecentsManager @Inject constructor(
     @Transient private val scope: CoroutineScope,
     @Transient private val vpnStatusProviderUI: VpnStatusProviderUI,
-    @Transient private val onSessionClosed: OnSessionClosed,
+    serverManager: ServerManager,
 ) : java.io.Serializable {
 
     @SerializedName("recentConnections")
@@ -74,8 +75,15 @@ class RecentsManager @Inject constructor(
             // Older version might have these fields missing.
             if (loadedRecents.recentCountries != null)
                 recentCountries.addAll(loadedRecents.recentCountries)
-            if (loadedRecents.recentServers != null)
-                recentServers.putAll(loadedRecents.recentServers)
+            if (loadedRecents.recentServers != null) {
+                recentServers.putAll(
+                    loadedRecents.recentServers
+                        .mapValues { (_, servers) ->
+                            servers.mapNotNullTo(ArrayDeque()) { serverManager.getServerById(it.serverId) }
+                        }
+                        .filter { (_, servers) -> servers.isNotEmpty() }
+                )
+            }
         }
 
         scope.launch {
@@ -90,9 +98,6 @@ class RecentsManager @Inject constructor(
                 }
             }
         }
-        onSessionClosed.logoutFlow.onEach {
-            clear()
-        }.launchIn(scope)
     }
 
     fun clear() {
@@ -104,7 +109,7 @@ class RecentsManager @Inject constructor(
     fun getRecentCountries(): List<String> = recentCountries
 
     private fun addToRecentServers(server: Server) {
-        recentServers.getOrPut(server.flag) {
+        recentServers.getOrPut(server.exitCountry) {
             ArrayDeque(RECENT_SERVER_MAX_SIZE + 1)
         }.apply {
             removeFirst { it.serverName == server.serverName }
@@ -125,6 +130,8 @@ class RecentsManager @Inject constructor(
     }
 
     fun getRecentServers(country: String): List<Server>? = recentServers[country]
+
+    fun getAllRecentServers(): List<Server> = recentServers.flatMap { (_, servers) -> servers }
 
     class RecentServersJsonAdapter : JsonDeserializer<LinkedHashMap<String, ArrayDeque<Server>>>,
                                      JsonSerializer<LinkedHashMap<String, ArrayDeque<Server>>>

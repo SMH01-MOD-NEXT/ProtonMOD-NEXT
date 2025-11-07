@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Proton AG
+ * Copyright (c) 2025. Proton AG
  *
  * This file is part of ProtonVPN.
  *
@@ -16,7 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with ProtonVPN.  If not, see <https://www.gnu.org/licenses/>.
  */
-package com.protonvpn.android.tv
+
+package com.protonvpn.android.tv.main
 
 import android.app.Activity
 import android.content.Context
@@ -46,8 +47,6 @@ import com.protonvpn.android.components.BaseTvBrowseFragment
 import com.protonvpn.android.databinding.TvCardRowBinding
 import com.protonvpn.android.models.features.PaidFeature
 import com.protonvpn.android.tv.detailed.CountryDetailFragment
-import com.protonvpn.android.tv.main.TvMainViewModel
-import com.protonvpn.android.tv.main.translateMapCoordinatesToRegion
 import com.protonvpn.android.tv.models.CardListRow
 import com.protonvpn.android.tv.models.CardRow
 import com.protonvpn.android.tv.models.ConnectIntentCard
@@ -69,6 +68,7 @@ import com.protonvpn.android.tv.settings.lanconnections.TvSettingsLanConnections
 import com.protonvpn.android.tv.settings.netshield.TvSettingsNetShieldActivity
 import com.protonvpn.android.tv.settings.protocol.TvSettingsProtocolActivity
 import com.protonvpn.android.tv.settings.splittunneling.TvSettingsSplitTunnelingActivity
+import com.protonvpn.android.tv.showTvDialog
 import com.protonvpn.android.tv.ui.TvKeyConstants
 import com.protonvpn.android.tv.upsell.TvUpsellActivity
 import com.protonvpn.android.ui.drawer.bugreport.DynamicReportActivity
@@ -80,7 +80,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class TvMainFragment : BaseTvBrowseFragment() {
+class TvHomeFragment : BaseTvBrowseFragment() {
 
     private val viewModel by activityViewModels<TvMainViewModel>()
 
@@ -89,7 +89,7 @@ class TvMainFragment : BaseTvBrowseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        onItemViewSelectedListener = OnItemViewSelectedListener { _, item, _, _ ->
+        onItemViewSelectedListener = OnItemViewSelectedListener { _, item, _, row ->
             if (item != null) {
                 val selectedCountry = when (item) {
                     is CountryCard -> item.vpnCountry.flag
@@ -98,6 +98,14 @@ class TvMainFragment : BaseTvBrowseFragment() {
                     else -> null
                 }
                 viewModel.setSelectedCountry(selectedCountry)
+            }
+
+            if(row != null) {
+                rowsAdapter?.let { adapter ->
+                    val selectedRowIndex = adapter.indexOf(row)
+                    val lastRowIndex = adapter.size().minus(1)
+                    viewModel.onLastRowSelection(selected = selectedRowIndex == lastRowIndex)
+                }
             }
         }
 
@@ -152,19 +160,21 @@ class TvMainFragment : BaseTvBrowseFragment() {
                     activity?.supportFragmentManager?.commit {
                         setReorderingAllowed(true)
                         addSharedElement(
-                            imageView, CountryDetailFragment.transitionNameForCountry(item.vpnCountry.flag)
+                            imageView, CountryDetailFragment.Companion.transitionNameForCountry(item.vpnCountry.flag)
                         )
                         replace(
-                            R.id.container,
+                            R.id.home_container,
                             CountryDetailFragment::class.java,
-                            CountryDetailFragment.createArguments(item.vpnCountry.flag)
+                            CountryDetailFragment.Companion.createArguments(item.vpnCountry.flag)
                         )
                         addToBackStack(null)
                     }
                 }
+
                 is ConnectIntentCard -> {
                     viewModel.connect(requireActivity() as BaseTvActivity, item)
                 }
+
                 is QuickConnectCard -> {
                     viewModel.onQuickConnectAction(requireActivity() as BaseTvActivity)
                 }
@@ -189,6 +199,7 @@ class TvMainFragment : BaseTvBrowseFragment() {
                         paidFeatureActivityClass = TvSettingsNetShieldActivity::class.java,
                     )
                 }
+
                 is SettingsProtocolCard -> {
                     startActivity(Intent(context, TvSettingsProtocolActivity::class.java))
                 }
@@ -199,9 +210,11 @@ class TvMainFragment : BaseTvBrowseFragment() {
                         paidFeatureActivityClass = TvSettingsSplitTunnelingActivity::class.java,
                     )
                 }
+
                 is LogoutCard -> {
                     logout()
                 }
+
                 is ReportBugCard -> {
                     startActivity(Intent(context, DynamicReportActivity::class.java))
                 }
@@ -312,7 +325,7 @@ class TvMainFragment : BaseTvBrowseFragment() {
     }
 
     private class RowViewHolder(val binding: TvCardRowBinding, presenter: ListRowPresenter) :
-            ListRowPresenter.ViewHolder(binding.root, binding.rowContent, presenter)
+        ListRowPresenter.ViewHolder(binding.root, binding.rowContent, presenter)
 
     private inner class FadeTopListRowPresenter : FadeListRowPresenter(true) {
 
@@ -325,7 +338,7 @@ class TvMainFragment : BaseTvBrowseFragment() {
         override fun RowPresenter.ViewHolder.getRowIndex() =
             (rowObject as CardListRow).index
 
-        override fun createRowViewHolder(parent: ViewGroup): RowPresenter.ViewHolder {
+        override fun createRowViewHolder(parent: ViewGroup): ViewHolder {
             super.createRowViewHolder(parent)
 
             val rowView = TvCardRowBinding.inflate(layoutInflater)
@@ -352,7 +365,7 @@ class TvMainFragment : BaseTvBrowseFragment() {
             return RowViewHolder(rowView, this)
         }
 
-        override fun onBindRowViewHolder(holder: RowPresenter.ViewHolder, item: Any?) {
+        override fun onBindRowViewHolder(holder: RowPresenter.ViewHolder, item: Any) {
             super.onBindRowViewHolder(holder, item)
             val row = (item as CardListRow).cardRow
             with(holder as RowViewHolder) {
@@ -364,14 +377,6 @@ class TvMainFragment : BaseTvBrowseFragment() {
                     binding.icon.colorFilter = null
                 }
             }
-        }
-
-        override fun onRowViewSelected(holder: RowPresenter.ViewHolder?, selected: Boolean) {
-            super.onRowViewSelected(holder, selected)
-            val index = rowsAdapter?.indexOf(holder?.rowObject) ?: -1
-            val isLastRow = index >= 0 && index == (rowsAdapter?.size() ?: 0) - 1
-            if (isLastRow)
-                viewModel.onLastRowSelection(selected)
         }
     }
 

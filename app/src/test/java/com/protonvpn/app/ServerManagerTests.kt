@@ -130,7 +130,8 @@ class ServerManagerTests {
     fun doNotChooseOfflineServerFromAll() = testScope.runTest {
         createServerManagers()
         val protocol = currentSettings.value.protocol
-        val server = manager.getBestScoreServer(false, serverFeatures = emptySet(), currentUser.vpnUser(), protocol)
+        val countryServers = manager.allServersByScore.filter { !it.isGatewayServer }
+        val server = manager.getBestScoreServer(countryServers, currentUser.vpnUser(), protocol)
         assertNotNull(server)
         assertEquals("DE#1", server.serverName)
     }
@@ -210,6 +211,7 @@ class ServerManagerTests {
         }
 
         val servers = listOf(
+            createServer("US plus offline", score = 1.0, exitCountry = "US", isOnline = false, tier = 2),
             createServer("US plus online", score = 2.0, exitCountry = "US", tier = 2),
             createServer("US plus online second", score = 3.0, exitCountry = "US", tier = 2),
             createServer("US plus offline", score = 3.0, exitCountry = "US", isOnline = false, tier = 2),
@@ -228,11 +230,12 @@ class ServerManagerTests {
         val secureCoreUs = ConnectIntent.SecureCore(CountryId("US"), CountryId.fastest)
         testIntent("US plus online", ConnectIntent.Fastest, plusUser)
         testIntent("CH free online", ConnectIntent.Fastest, freeUser)
-        testIntent(null, fastestPl, plusUser)
-        testIntent(null, fastestPl, freeUser)
         testIntent("CH free online", fastestCh, plusUser)
         testIntent("PL SC plus online", secureCorePl, plusUser)
         testIntent("US SC plus online", secureCoreUs, plusUser)
+        // Offline servers are returned if no other server satisfies the intent.
+        testIntent("PL plus offline", fastestPl, plusUser)
+        testIntent("PL free offline", fastestPl, freeUser)
     }
 
     @Test
@@ -278,7 +281,6 @@ class ServerManagerTests {
             this,
             testDispatcherProvider,
             supportsProtocol,
-            currentUser,
             servers,
         )
         serverManager2 = ServerManager2(manager, supportsProtocol)

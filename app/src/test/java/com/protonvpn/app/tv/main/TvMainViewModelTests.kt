@@ -143,7 +143,6 @@ class TvMainViewModelTests {
             testScope,
             TestDispatcherProvider(testDispatcher),
             supportsProtocol,
-            mockCurrentUser,
             MockedServers.serverList,
         )
 
@@ -162,7 +161,7 @@ class TvMainViewModelTests {
             vpnStatusProviderUI = vpnStatusProviderUI,
             vpnStateMonitor = vpnStateMonitor,
             connectHelper = mockk(),
-            recentsManager = RecentsManager(bgScope, vpnStatusProviderUI, mockk(relaxed = true)),
+            recentsManager = RecentsManager(bgScope, vpnStatusProviderUI, serverManager),
             featureFlags = GetFeatureFlags(MutableStateFlow(FeatureFlags())),
             getCountryCard = mockk(),
             currentUser = mockCurrentUser,

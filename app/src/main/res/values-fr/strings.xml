@@ -318,10 +318,10 @@
 
          Example: 76% server load -->
     <string name="tv_server_list_load">%1$s %% de charge serveur</string>
-    <string name="tv_recently_used_servers">Serveurs récemment utilisés (%1$d)</string>
-    <string name="tv_available_servers">Serveurs disponibles (%1$d)</string>
-    <string name="tv_locked_servers">Serveurs verrouillés (%1$d)</string>
-    <string name="tv_other_servers">Autres serveurs (%1$d)</string>
+    <string name="tv_recently_used_servers">Serveurs récemment utilisés</string>
+    <string name="tv_available_servers">Serveurs disponibles</string>
+    <string name="tv_locked_servers">Serveurs verrouillés</string>
+    <string name="tv_other_servers">Autres serveurs</string>
     <string name="tv_server_list">Liste de serveurs</string>
     <string name="tv_server_list_action_unavailable">Indisponible</string>
     <string name="notification_subscription_expired_title">Votre abonnement Proton VPN a expiré.</string>
@@ -1364,7 +1364,7 @@
     <string name="settings_advanced_alternative_routing_description">Si les services Proton sont bloqués en raison de restrictions du réseau, nous essaierons d\'utiliser un routage alternatif du réseau pour vous connecter à nos sites.</string>
     <string name="settings_advanced_allow_lan_title">Connexions LAN</string>
     <string name="settings_advanced_allow_lan_description">Vous permet de vous connecter à des imprimantes, des enceintes et d\'autres appareils du réseau local de votre appareil.</string>
-    <string name="settings_advanced_allow_lan_description_tv">Se connecter à des enceintes, des ordinateurs et d’autres appareils sur votre réseau local</string>
+    <string name="settings_advanced_allow_lan_description_tv">Connecter à des enceintes, des ordinateurs et d’autres appareils sur votre réseau local</string>
     <string name="settings_advanced_allow_lan_title_tv">Autoriser les connexions LAN</string>
     <string name="settings_advanced_nat_type_title">Type de NAT</string>
     <!-- %1$s - will have translated learn_more value -->
@@ -1549,7 +1549,7 @@
     <string name="settings_advanced_ipv6_description">Le trafic IPv6 passe par le VPN, ce qui peut améliorer la compatibilité avec les réseaux IPv6.</string>
     <string name="settings_split_tunneling_ipv6_disabled_dialog_message">Pour utiliser cette adresse, vous devez autoriser les connexions IPv6 via le tunnel VPN.</string>
     <string name="setting_ipv6_disabled_dialog_action_enable">Activer IPv6</string>
-    <string name="settings_split_tunneling_ipv6_disabled_dialog_title">IPv6 est désactivé</string>
+    <string name="settings_split_tunneling_ipv6_disabled_dialog_title">L\'IPv6 a été désactivé</string>
     <string name="settings_ipv6_enabled_toast">IPv6 activé</string>
     <string name="info_dialog_ipv6_traffic_benefits1">Garantit l\'accès aux sites internet et services uniquement compatibles avec IPv6.</string>
     <string name="info_dialog_ipv6_traffic_benefits2">Prévient les problèmes sur les réseaux qui dépendent de l\'IPv6.</string>
@@ -1561,8 +1561,8 @@
     <string name="settings_lan_allow_direct_connection_description">Connectez-vous aux Smart TV, à Android Auto et à d\'autres appareils qui créent leur propre réseau. Pour une sécurité maximale, activez uniquement cette fonction lorsque vous vous connectez à ces appareils.</string>
     <!-- No VPN connections -->
     <string name="no_connections_title">Aucune connexion VPN disponible</string>
-    <string name="no_connections_description_loading_error">Échec du chargement de la liste des serveurs</string>
-    <string name="no_connections_description_no_servers">Demandez l\'accès de votre compte VPN à votre administrateur.</string>
+    <string name="no_connections_description_loading_error">Nous n\'avons pas pu charger la liste des serveurs.</string>
+    <string name="no_connections_description_no_servers">Demandez à votre administrateur d\'activer l\'accès VPN pour votre compte.</string>
     <string name="no_connections_action_refresh">Actualiser</string>
     <string name="no_connections_action_sign_out">Se déconnecter</string>
     <string name="no_connections_help_contact_us"><![CDATA[Besoin d\'aide ? <a href=""> Contactez-nous</a>]]></string>

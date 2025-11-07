@@ -44,24 +44,27 @@ import com.protonvpn.android.appconfig.UserCountryTelephonyBased
 import com.protonvpn.android.appconfig.VpnFeatureFlagContextProvider
 import com.protonvpn.android.appconfig.globalsettings.GlobalSettingUpdateScheduler
 import com.protonvpn.android.appconfig.globalsettings.GlobalSettingsUpdateWorker
+import com.protonvpn.android.appconfig.periodicupdates.PeriodicUpdateManager
+import com.protonvpn.android.appconfig.periodicupdates.PeriodicUpdateManagerImpl
 import com.protonvpn.android.appconfig.periodicupdates.PeriodicUpdateWorkerScheduler
 import com.protonvpn.android.appconfig.periodicupdates.PeriodicUpdateWorkerSchedulerImpl
 import com.protonvpn.android.auth.usecase.CurrentUser
 import com.protonvpn.android.auth.usecase.CurrentUserProvider
 import com.protonvpn.android.auth.usecase.DefaultCurrentUserProvider
+import com.protonvpn.android.auth.usecase.SetVpnUser
+import com.protonvpn.android.auth.usecase.SetVpnUserImpl
 import com.protonvpn.android.base.ui.theme.VpnTheme
 import com.protonvpn.android.concurrency.DefaultDispatcherProvider
 import com.protonvpn.android.concurrency.VpnDispatcherProvider
 import com.protonvpn.android.managed.usecase.AutoLogin
 import com.protonvpn.android.managed.usecase.AutoLoginImpl
-import com.protonvpn.android.servers.ServersStore
 import com.protonvpn.android.models.vpn.usecase.ProvideLocalNetworks
 import com.protonvpn.android.models.vpn.usecase.ProvideLocalNetworksImpl
 import com.protonvpn.android.models.vpn.usecase.SupportsProtocol
-import com.protonvpn.android.profiles.usecases.GetProfileById
-import com.protonvpn.android.profiles.usecases.GetProfileByIdImpl
 import com.protonvpn.android.profiles.usecases.GetPrivateBrowsingAvailability
 import com.protonvpn.android.profiles.usecases.GetPrivateBrowsingAvailabilityImpl
+import com.protonvpn.android.profiles.usecases.GetProfileById
+import com.protonvpn.android.profiles.usecases.GetProfileByIdImpl
 import com.protonvpn.android.profiles.usecases.IsProfileAutoOpenPrivateBrowsingFeatureFlagEnabled
 import com.protonvpn.android.profiles.usecases.IsProfileAutoOpenPrivateBrowsingFeatureFlagEnabledImpl
 import com.protonvpn.android.redesign.countries.ui.ServerListViewModelDataAdapter
@@ -70,6 +73,7 @@ import com.protonvpn.android.redesign.search.ui.SearchViewModelDataAdapter
 import com.protonvpn.android.redesign.search.ui.SearchViewModelDataAdapterLegacy
 import com.protonvpn.android.servers.IsBinaryServerStatusFeatureFlagEnabled
 import com.protonvpn.android.servers.IsBinaryServerStatusFeatureFlagEnabledImpl
+import com.protonvpn.android.servers.ServersStore
 import com.protonvpn.android.servers.UpdateServersWithBinaryStatus
 import com.protonvpn.android.servers.UpdateServersWithBinaryStatusImpl
 import com.protonvpn.android.telemetry.CommonDimensions
@@ -275,6 +279,9 @@ object AppModuleProd {
         @Singleton
         @Binds
         fun provideCurrentUserProvider(provider: DefaultCurrentUserProvider): CurrentUserProvider
+
+        @Binds
+        fun providerSetVpnUser(setVpnUser: SetVpnUserImpl): SetVpnUser
     }
 }
 
@@ -369,7 +376,7 @@ object AppModule {
     @Provides
     @Singleton
     fun provideDebugApiPrefs(provider: SharedPreferencesProvider): DebugApiPrefs? =
-        if (BuildConfig.DEBUG) DebugApiPrefs(provider) else null
+        if (BuildConfigUtils.displayDebugUi()) DebugApiPrefs(provider) else null
 
     @Module
     @InstallIn(SingletonComponent::class)
@@ -450,6 +457,9 @@ object AppModule {
         fun bindIsTvNetShieldSettingFeatureFlagEnabled(
             impl: IsTvNetShieldSettingFeatureFlagEnabledImpl
         ): IsTvNetShieldSettingFeatureFlagEnabled
+
+        @Binds
+        fun bindPeriodicUpdateManager(impl: PeriodicUpdateManagerImpl): PeriodicUpdateManager
 
         @Binds
         fun bindProvideLocalNetworks(impl: ProvideLocalNetworksImpl): ProvideLocalNetworks

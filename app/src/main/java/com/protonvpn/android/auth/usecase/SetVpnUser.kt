@@ -24,13 +24,21 @@ import com.protonvpn.android.auth.data.VpnUserDao
 import dagger.Reusable
 import javax.inject.Inject
 
+interface SetVpnUser {
+    suspend operator fun invoke(vpnUser: VpnUser?)
+}
+
 @Reusable
-class SetVpnUser @Inject constructor(
+class SetVpnUserImpl @Inject constructor(
     private val vpnUserDao: VpnUserDao,
     private val currentUser: CurrentUser
-) {
-    suspend operator fun invoke(vpnUser: VpnUser) {
-        vpnUserDao.insertOrUpdate(vpnUser)
+) : SetVpnUser {
+    override suspend operator fun invoke(vpnUser: VpnUser?) {
+        if (vpnUser != null) {
+            vpnUserDao.insertOrUpdate(vpnUser)
+        } else {
+            currentUser.vpnUser()?.let { vpnUserDao.delete(it) }
+        }
         currentUser.invalidateCache()
     }
 }

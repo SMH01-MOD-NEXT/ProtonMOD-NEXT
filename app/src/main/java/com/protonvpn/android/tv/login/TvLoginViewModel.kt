@@ -23,19 +23,13 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.protonvpn.android.R
-import com.protonvpn.android.api.GuestHole
 import com.protonvpn.android.api.ProtonApiRetroFit
 import com.protonvpn.android.appconfig.AppConfig
 import com.protonvpn.android.appconfig.ForkedSessionResponse
 import com.protonvpn.android.appconfig.SessionForkSelectorResponse
 import com.protonvpn.android.auth.usecase.CurrentUser
-import com.protonvpn.android.auth.usecase.SetVpnUser
-import com.protonvpn.android.auth.usecase.VpnLogin
 import com.protonvpn.android.di.ElapsedRealtimeClock
-import com.protonvpn.android.di.WallClock
-import com.protonvpn.android.managed.ManagedConfig
 import com.protonvpn.android.models.login.LoginResponse
-import com.protonvpn.android.models.login.toVpnUserEntity
 import com.protonvpn.android.servers.UpdateServerListFromApi
 import com.protonvpn.android.tv.login.TvLoginViewState.Companion.toLoginError
 import com.protonvpn.android.ui.home.ServerListUpdater
@@ -65,17 +59,13 @@ annotation class TvLoginPollDelayMs
 @HiltViewModel
 class TvLoginViewModel @Inject constructor(
     private val currentUser: CurrentUser,
-    private val setVpnUser: SetVpnUser,
     private val appConfig: AppConfig,
     private val api: ProtonApiRetroFit,
     private val serverListUpdater: ServerListUpdater,
     private val serverManager: ServerManager,
     private val accountManager: AccountManager,
-    private val guestHole: GuestHole,
     @TvLoginPollDelayMs val pollDelayMs: Long = POLL_DELAY_MS,
     @ElapsedRealtimeClock private val monoClockMs: () -> Long,
-    @WallClock private val wallClock: () -> Long,
-    private val managedConfig: ManagedConfig
 ) : ViewModel() {
 
     val state = MutableLiveData<TvLoginViewState>()
@@ -153,46 +143,27 @@ class TvLoginViewModel @Inject constructor(
 
     private suspend fun onSessionActive(userId: UserId, loginResponse: LoginResponse) {
         with(loginResponse) {
-            accountManager.addAccount(Account(
-                userId,
-                "",
-                null,
-                AccountState.Ready,
-                sessionId,
-                SessionState.Authenticated,
-                AccountDetails(null, null)
-            ), Session.Authenticated(
-                userId,
-                sessionId,
-                accessToken,
-                refreshToken,
-                scope.split(" ")))
+            accountManager.addAccount(
+                Account(
+                    userId,
+                    "",
+                    null,
+                    AccountState.Ready,
+                    sessionId,
+                    SessionState.Authenticated,
+                    AccountDetails(null, null)
+                ),
+                Session.Authenticated(
+                    userId,
+                    sessionId,
+                    accessToken,
+                    refreshToken,
+                    scope.split(" ")
+                )
+            )
         }
-        when (val infoResult = api.getVPNInfo(loginResponse.sessionId)) {
-            is ApiResult.Error -> {
-                accountManager.removeAccount(userId)
-                state.value = infoResult.toLoginError()
-            }
-            is ApiResult.Success -> {
-                val vpnInfo = infoResult.value.vpnInfo
-                when {
-                    vpnInfo.hasNoConnectionsAssigned -> {
-                        accountManager.removeAccount(userId)
-                        state.value = TvLoginViewState.ConnectionAllocationPrompt
-                    }
-                    vpnInfo.userTierUnknown -> {
-                        accountManager.removeAccount(userId)
-                        state.value = TvLoginViewState.Error(R.string.loaderErrorGeneric, R.string.try_again)
-                    }
-                    else -> {
-                        setVpnUser(
-                            infoResult.value.toVpnUserEntity(userId, loginResponse.sessionId, wallClock(), managedConfig.value?.username))
-                        currentUser.invalidateCache()
-                        loadInitialConfig(userId)
-                    }
-                }
-            }
-        }
+        currentUser.invalidateCache()
+        state.value = TvLoginViewState.Success
     }
 
     private suspend fun loadInitialConfig(userId: UserId) {
@@ -200,7 +171,6 @@ class TvLoginViewModel @Inject constructor(
         appConfig.forceUpdate(userId)
         when (val result = serverListUpdater.updateServerList()) {
             UpdateServerListFromApi.Result.Success -> {
-                guestHole.releaseNeedGuestHole(VpnLogin.GUEST_HOLE_ID)
                 state.value = TvLoginViewState.Success
             }
             is UpdateServerListFromApi.Result.Error ->

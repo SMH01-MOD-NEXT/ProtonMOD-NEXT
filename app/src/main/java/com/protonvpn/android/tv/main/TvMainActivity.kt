@@ -18,41 +18,44 @@
  */
 package com.protonvpn.android.tv.main
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.commit
-import androidx.lifecycle.Observer
-import androidx.lifecycle.asLiveData
+import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import com.protonvpn.android.BuildConfig
 import com.protonvpn.android.R
+import com.protonvpn.android.api.GuestHole
+import com.protonvpn.android.auth.usecase.VpnLogin
 import com.protonvpn.android.components.BaseTvActivity
 import com.protonvpn.android.databinding.ActivityTvMainBinding
+import com.protonvpn.android.redesign.app.ui.VpnApp
+import com.protonvpn.android.redesign.app.ui.VpnAppViewModel
 import com.protonvpn.android.tv.IsTvCheck
 import com.protonvpn.android.tv.TvLoginActivity
-import com.protonvpn.android.tv.TvMainFragment
+import com.protonvpn.android.tv.login.TvPostLoginFragment
 import com.protonvpn.android.ui.main.AccountViewModel
 import com.protonvpn.android.ui.main.MainActivityHelper
-import com.protonvpn.android.utils.CountryTools
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
-
-const val MAP_SHOW_DELAY = 500L
-const val MAP_FADE_IN_DURATION = 400L
 
 @AndroidEntryPoint
 class TvMainActivity : BaseTvActivity() {
 
-    private val viewModel: TvMainViewModel by viewModels()
     private val accountViewModel: AccountViewModel by viewModels()
+    private val vpnAppViewModel: VpnAppViewModel by viewModels()
+    private var vpnAppStateJob: Job? = null
 
     @Inject
     lateinit var isTv: IsTvCheck
+
+    @Inject
+    lateinit var guestHole: GuestHole
 
     private val helper = object : MainActivityHelper(this) {
 
@@ -61,15 +64,14 @@ class TvMainActivity : BaseTvActivity() {
             loginLauncher.launch(Unit)
         }
 
-        override suspend fun onReady() = with(supportFragmentManager) {
-            if (findFragmentById(R.id.container) == null)
-                commit {
-                    add(R.id.container, TvMainFragment::class.java, null)
-                }
-        }
-
-        override fun onAssignConnectionNeeded() {
-            // Ignore. Handled in TvLoginActivity.
+        override suspend fun onReady() {
+            if (supportFragmentManager.findFragmentById(R.id.container) == null) {
+                vpnAppStateJob = vpnAppViewModel.loadingState
+                    .flowWithLifecycle(lifecycle)
+                    .distinctUntilChanged()
+                    .onEach { onAppStateChanged(it) }
+                    .launchIn(lifecycleScope)
+            }
         }
     }
 
@@ -84,55 +86,33 @@ class TvMainActivity : BaseTvActivity() {
         setContentView(binding.root)
         helper.onCreate(accountViewModel)
 
-        binding.mapView.init(
-            MapRendererConfig(
-                background = getColor(R.color.tvBackground),
-                country = getColor(R.color.tvMapCountry),
-                border = getColor(R.color.tvMapBorder),
-                selected = getColor(R.color.tvMapSelected),
-                connecting = getColor(R.color.tvMapSelected),
-                connected = getColor(R.color.tvMapConnected),
-                borderWidth = .2f,
-                zoomIndependentBorderWidth = false
-            ),
-            showDelayMs = MAP_SHOW_DELAY,
-            fadeInDurationMs = MAP_FADE_IN_DURATION,
-        )
-        viewModel.selectedCountryFlag.observe(this, Observer {
-            updateMapSelection(binding)
-        })
-        viewModel.connectedCountryFlag.observe(this, Observer {
-            updateMapSelection(binding)
-        })
-        viewModel.mapRegion.observe(this, Observer {
-            binding.mapView.focusRegionInMapBoundsAnimated(lifecycleScope, it, minWidth = 0.5f)
-        })
-
-        with(binding.versionLabel) {
-            alpha = 0f
-            @SuppressLint("SetTextI18n")
-            text = "ProtonVPN v${BuildConfig.VERSION_NAME}"
-            viewModel.showVersion.asLiveData().observe(this@TvMainActivity, Observer { show ->
-                animate().alpha(if (show) 1f else 0f)
-            })
-        }
-
         val isTvIntent = intent.hasCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
         isTv.onUiLaunched(isTvIntent)
     }
 
-    private fun updateMapSelection(binding: ActivityTvMainBinding) {
-        val selected = CountryTools.codeToMapCountryName[viewModel.selectedCountryFlag.value]
-        val connected = CountryTools.codeToMapCountryName[viewModel.connectedCountryFlag.value]
-        binding.mapView.setSelection(
-            buildList {
-                if (connected != null) add(CountryHighlightInfo(connected, CountryHighlight.CONNECTED))
-                if (selected != null && selected != connected) add(CountryHighlightInfo(selected, CountryHighlight.SELECTED))
-            }
-        )
+    private fun onAppStateChanged(loaderState: VpnAppViewModel.LoaderState?) {
+        // The most common path is for the state to change: null -> Loaded.
+        // Don't set ant fragment for null to avoid unnecessary work on app start.
+        if (loaderState == null)
+            return
+
+        if (loaderState == VpnAppViewModel.LoaderState.Loaded) {
+            // TODO: release the GH
+            //guestHole.releaseNeedGuestHole(VpnLogin.GUEST_HOLE_ID)
+        }
+
+        val fragmentClass = if (loaderState == VpnAppViewModel.LoaderState.Loaded) {
+            TvMainFragment::class.java
+        } else {
+            TvPostLoginFragment::class.java
+        }
+        supportFragmentManager.commit {
+            replace(R.id.container, fragmentClass, null)
+        }
     }
 
     private fun clearMainFragment() = with(supportFragmentManager) {
+        vpnAppStateJob?.cancel()
         commit {
             findFragmentById(R.id.container)?.let {
                 remove(it)

@@ -24,7 +24,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
-import com.protonvpn.android.redesign.app.ui.ServerLoadingViewModel.LoaderState
+import com.protonvpn.android.redesign.app.ui.VpnAppViewModel.LoaderState
 import com.protonvpn.android.redesign.app.ui.nav.RootNav
 import com.protonvpn.android.ui.noconnections.NoConnectionsScreen
 
@@ -35,13 +35,13 @@ fun VpnApp(
     modifier: Modifier = Modifier,
 ) {
     val rootController = rememberNavController()
-    val viewModel: ServerLoadingViewModel = hiltViewModel()
+    val viewModel: VpnAppViewModel = hiltViewModel()
 
-    when (val state = viewModel.serverLoadingState.collectAsState().value) {
+    when (val state = viewModel.loadingState.collectAsState().value) {
         is LoaderState.Error -> {
             NoConnectionsScreen(
                 state = state,
-                onRefresh = viewModel::updateServerList,
+                onRefresh = state.retryAction,
                 onLogout = coreNavigation.onSignOut,
             )
         }
