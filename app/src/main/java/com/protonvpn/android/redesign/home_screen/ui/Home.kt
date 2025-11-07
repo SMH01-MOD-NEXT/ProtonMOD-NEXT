@@ -259,18 +259,6 @@ fun HomeRoute(
 
     if (fullyDrawn) {
         LaunchedEffect(key1 = Unit) {
-            val prefs = context.getSharedPreferences("protonmod_prefs", Context.MODE_PRIVATE)
-            if (prefs.getBoolean("proxy_enabled", false)) {
-                prefs.edit().putBoolean("proxy_enabled", false).apply()
-
-                // сбросить пул соединений, чтобы новые запросы пошли напрямую
-                val app = (context.applicationContext as ProtonApplicationHilt)
-                app.appScope.launch {
-                    app.okHttpClient.connectionPool.evictAll()
-                }
-
-                Log.d("ProxyToggle", "Proxy disabled automatically on Home screen")
-            }
             val vlessManager = VlessManager.getInstance(context.applicationContext)
             if (!vlessManager.isRunning()) {
                 Log.d("VlessManagerCheck", "VlessManager is not running. Starting it now.")
