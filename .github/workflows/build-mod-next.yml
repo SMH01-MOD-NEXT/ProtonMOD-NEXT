@@ -1,0 +1,84 @@
+name: Build ProtonMOD-Next
+
+on:
+  push:
+    branches:
+      - 'protonmod-next'
+      
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build APKs (with debug key)
+        run: ./gradlew assembleProductionGooglePlayStoreDebug assembleProductionGooglePlayStoreRelease
+
+      - name: Decode Keystore
+        env:
+          SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_BASE64 }}
+        run: |
+          echo $SIGNING_KEY_BASE64 | base64 --decode > $GITHUB_WORKSPACE/app/release-key.jks
+
+      - name: Install Android SDK Build-Tools (for apksigner)
+        uses: android-actions/setup-android@v3
+        with:
+          build-tools: 34.0.0
+
+      - name: Sign Debug APK with Production Key
+        env:
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/productionGooglePlayStore/debug/ -name "*.apk" | head -n 1)
+          echo "Signing $APK_PATH"
+          $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner sign --ks $GITHUB_WORKSPACE/app/release-key.jks \
+            --ks-key-alias "$SIGNING_KEY_ALIAS" \
+            --ks-pass env:SIGNING_STORE_PASSWORD \
+            --key-pass env:SIGNING_KEY_PASSWORD \
+            "$APK_PATH"
+
+      - name: Sign Release APK with Production Key
+        env:
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/productionGooglePlayStore/release/ -name "*.apk" | head -n 1)
+          echo "Signing $APK_PATH"
+          $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner sign --ks $GITHUB_WORKSPACE/app/release-key.jks \
+            --ks-key-alias "$SIGNING_KEY_ALIAS" \
+            --ks-pass env:SIGNING_STORE_PASSWORD \
+            --key-pass env:SIGNING_KEY_PASSWORD \
+            "$APK_PATH"
+
+      - name: Upload PlayStore Debug APK (Signed)
+        uses: actions/upload-artifact@v4
+        with:
+          name: playstore-debug-apk-signed
+          path: app/build/outputs/apk/productionGooglePlayStore/debug/*.apk
+
+      - name: Upload PlayStore Release APK (Signed)
+        uses: actions/upload-artifact@v4
+        with:
+          name: playstore-release-apk-signed
+          path: app/build/outputs/apk/productionGooglePlayStore/release/*.apk
