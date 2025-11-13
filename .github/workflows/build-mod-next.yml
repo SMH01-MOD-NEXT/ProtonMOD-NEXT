@@ -32,18 +32,34 @@ jobs:
       - name: Build APKs (with debug key)
         run: ./gradlew assembleProductionGooglePlayStoreDebug assembleProductionGooglePlayStoreRelease
 
+      - name: Check for signing secrets
+        id: check_secrets
+        run: |
+          if [ -n "${{ secrets.SIGNING_KEY_BASE64 }}" ] && \
+             [ -n "${{ secrets.SIGNING_STORE_PASSWORD }}" ] && \
+             [ -n "${{ secrets.SIGNING_KEY_ALIAS }}" ] && \
+             [ -n "${{ secrets.SIGNING_KEY_PASSWORD }}" ]; then
+            echo "SECRETS_PRESENT=true" >> $GITHUB_OUTPUT
+          else
+            echo "SECRETS_PRESENT=false" >> $GITHUB_OUTPUT
+            echo "One or more signing secrets are missing. Skipping re-signing."
+          fi
+
       - name: Decode Keystore
+        if: steps.check_secrets.outputs.SECRETS_PRESENT == 'true'
         env:
           SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_BASE64 }}
         run: |
           echo $SIGNING_KEY_BASE64 | base64 --decode > $GITHUB_WORKSPACE/app/release-key.jks
 
       - name: Install Android SDK Build-Tools (for apksigner)
+        if: steps.check_secrets.outputs.SECRETS_PRESENT == 'true'
         uses: android-actions/setup-android@v3
         with:
           build-tools: 34.0.0
 
-      - name: Sign Debug APK with Production Key
+      - name: Sign Debug APK
+        if: steps.check_secrets.outputs.SECRETS_PRESENT == 'true'
         env:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
@@ -57,7 +73,8 @@ jobs:
             --key-pass env:SIGNING_KEY_PASSWORD \
             "$APK_PATH"
 
-      - name: Sign Release APK with Production Key
+      - name: Sign Release APK
+        if: steps.check_secrets.outputs.SECRETS_PRESENT == 'true'
         env:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
@@ -71,14 +88,16 @@ jobs:
             --key-pass env:SIGNING_KEY_PASSWORD \
             "$APK_PATH"
 
-      - name: Upload PlayStore Debug APK (Signed)
+      - name: Upload MOD-Next Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: playstore-debug-apk-signed
+          name: debug-next-apk
           path: app/build/outputs/apk/productionGooglePlayStore/debug/*.apk
 
-      - name: Upload PlayStore Release APK (Signed)
+      - name: Upload MOD-Next Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: playstore-release-apk-signed
+          name: release-next-apk
           path: app/build/outputs/apk/productionGooglePlayStore/release/*.apk
+
+
