@@ -52,10 +52,12 @@
     <string name="serverLoad">%1$s%%</string>
     <string name="cancel">Cancel</string>
     <string name="close">Close</string>
+    <string name="dialogContinue">Continue</string>
     <string name="drawerReportProblem">Report an issue</string>
     <string name="proxy_toggle_off">Use proxy</string>
     <string name="proxy_toggle_on">Proxy enabled</string>
     <string name="drawerSignOut">@string/menuActionSignOut</string>
+    <string name="action_done">Done</string>
     <string name="action_share">Share</string>
     <string name="accountFree">Proton Free</string>
     <string name="restrictedMaintenanceTitle">Under maintenance</string>
@@ -442,8 +444,8 @@
     <string name="calendar_app_name" translatable="false">Proton Calendar</string>
     <string name="drive_app_name" translatable="false">Proton Drive</string>
     <string name="pass_app_name" translatable="false">Proton Pass</string>
-    <string name="upgrade_unlimited_all_apps_title">All premium Proton services. One easy subscription.</string>
-    <string name="upgrade_unlimited_all_apps_description">Get complete privacy coverage with Proton Unlimited.</string>
+    <string name="upgrade_unlimited_all_apps_title">Get complete privacy coverage with Proton Unlimited</string>
+    <string name="upgrade_unlimited_all_apps_description">Unlock all premium features from Proton VPN, Mail, Calendar, Drive, and Pass.</string>
     <string name="upgrade_unlimited_more">And more</string>
     <string name="upgrade_unlimited_vpn_unlimited_countries">Unlock all countries</string>
     <string name="upgrade_unlimited_vpn_all_features">All other VPN Plus features</string>
@@ -613,6 +615,9 @@
     <string name="dynamic_report_your_issue_headline">What’s the issue?</string>
     <string name="update_screen_title">Update Proton VPN</string>
     <string name="update_screen_description">You’re more likely to have issues on older versions of Proton VPN.</string>
+    <string name="update_banner_description_settings">A new version of the app is available</string>
+    <string name="update_banner_warning_vpn_connected_title">VPN will disconnect briefly</string>
+    <string name="update_banner_warning_vpn_connected_message">The app needs to restart to finish the update. You will be reconnected automatically afterward.</string>
     <string name="dialog_create_account_title">Create an account to continue</string>
     <string name="dialog_create_account_action_create">Create account</string>
     <string name="dialog_create_account_action_signin">Sign in</string>
@@ -718,7 +723,7 @@
     <string name="welcome_plus_description">Enjoy extra privacy features, supercharged performance, and next-level VPN customization.</string>
     <string name="welcome_plus_feature_security">Advanced security features</string>
     <string name="welcome_unlimited_title">Welcome to Proton Unlimited</string>
-    <string name="welcome_unlimited_description"><![CDATA[Congratulations! You unlocked premium security and performance features on all Proton services, plus <b>%1$d&#160;GB</b> total storage.<br><br>Enjoy the best of Proton privacy.]]></string>
+    <string name="welcome_unlimited_description"><![CDATA[You unlocked all premium Proton VPN, Mail, Calendar, Drive, Pass, and Wallet features — and <b>%1$d&#160;GB</b> total storage.]]></string>
     <string name="welcome_generic_title">Congratulations</string>
     <string name="welcome_generic_description">You\'ve upgraded your subscription. Enjoy advanced privacy features and next-level performance.</string>
     <!-- Example: Up to 10 devices at once
@@ -1414,8 +1419,8 @@
     <!-- Text on a badge displayed next to the "smart" protocol name in settings -->
     <string name="settings_protocol_badge_recommended">Recommended</string>
     <string name="settings_split_tunneling_mode_title">Mode</string>
-    <string name="settings_split_tunneling_mode_standard">Standard</string>
-    <string name="settings_split_tunneling_mode_inverse">Inverse</string>
+    <string name="settings_split_tunneling_mode_standard">Exclude</string>
+    <string name="settings_split_tunneling_mode_inverse">Include</string>
     <string name="settings_split_tunneling_mode_description_standard">Selected apps and IP addresses are excluded from VPN connection.</string>
     <string name="settings_split_tunneling_mode_description_inverse">Only selected apps and IP addresses connect through VPN, all other traffic is unprotected.</string>
     <string name="settings_split_tunneling_excluded_apps">Excluded apps</string>
@@ -1573,7 +1578,7 @@
     <string name="widget_status_connecting">Connecting</string>
     <string name="widget_sign_in">Sign in</string>
     <string name="widget_toast_added_message">Widget added to home screen</string>
-    <string name="settings_advanced_ipv6_title">IPv6</string>
+    <string name="settings_advanced_ipv6_title">IPv6 support</string>
     <string name="settings_advanced_ipv6_description">Tunnels IPv6 traffic through the VPN. Can enhance compatibility with IPv6 networks.</string>
     <string name="settings_split_tunneling_ipv6_disabled_dialog_message">To use this address, you need to allow IPv6 connections through the VPN tunnel.</string>
     <string name="setting_ipv6_disabled_dialog_action_enable">Enable IPv6</string>

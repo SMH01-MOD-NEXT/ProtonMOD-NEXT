@@ -29,7 +29,9 @@ import com.protonvpn.android.models.vpn.ConnectionParams
 import com.protonvpn.android.netshield.NetShieldProtocol
 import com.protonvpn.android.profiles.data.toProfile
 import com.protonvpn.android.redesign.CountryId
+import com.protonvpn.android.redesign.recents.usecases.ObserveDefaultConnection
 import com.protonvpn.android.redesign.recents.usecases.RecentsManager
+import com.protonvpn.android.redesign.reports.FakeIsRedesignedBugReportFeatureFlagEnabled
 import com.protonvpn.android.redesign.settings.ui.SettingValue
 import com.protonvpn.android.redesign.settings.ui.SettingsViewModel
 import com.protonvpn.android.redesign.settings.ui.SettingsViewModel.SettingViewState
@@ -49,6 +51,10 @@ import com.protonvpn.android.tv.settings.FakeIsTvCustomDnsSettingFeatureFlagEnab
 import com.protonvpn.android.tv.settings.FakeIsTvNetShieldSettingFeatureFlagEnabled
 import com.protonvpn.android.ui.settings.AppIconManager
 import com.protonvpn.android.ui.settings.BuildConfigInfo
+import com.protonvpn.android.ui.storage.UiStateStorage
+import com.protonvpn.android.ui.storage.UiStateStoreProvider
+import com.protonvpn.android.update.FakeIsAppUpdateBannerFeatureFlagEnabled
+import com.protonvpn.android.update.NoopAppUpdateManager
 import com.protonvpn.android.utils.Constants
 import com.protonvpn.android.vpn.IsPrivateDnsActiveFlow
 import com.protonvpn.android.vpn.VpnState
@@ -56,6 +62,7 @@ import com.protonvpn.android.vpn.VpnStateMonitor
 import com.protonvpn.android.vpn.VpnStatusProviderUI
 import com.protonvpn.android.vpn.usecases.FakeIsIPv6FeatureFlagEnabled
 import com.protonvpn.android.widget.WidgetManager
+import com.protonvpn.mocks.FakeAppUpdateBannerStateFlow
 import com.protonvpn.mocks.FakeGetProfileById
 import com.protonvpn.mocks.FakeIsLanDirectConnectionsFeatureFlagEnabled
 import com.protonvpn.test.shared.InMemoryDataStoreFactory
@@ -102,7 +109,11 @@ class SettingsViewModelTests {
     private lateinit var mockObserveUserSettings: ObserveUserSettings
 
     @MockK
+    private lateinit var mockObserveDefaultConnection: ObserveDefaultConnection
+
+    @MockK
     private lateinit var mockIsTvCheck: IsTvCheck
+
     @MockK
     private lateinit var mockAppIconManager: AppIconManager
 
@@ -111,10 +122,13 @@ class SettingsViewModelTests {
 
     @RelaxedMockK
     private lateinit var mockRecentManager: RecentsManager
+
     @RelaxedMockK
     private lateinit var isFido2Enabled: IsFido2Enabled
+
     @RelaxedMockK
     private lateinit var observeRegisteredSecurityKeys: ObserveRegisteredSecurityKeys
+
     @RelaxedMockK
     private lateinit var mockWidgetManager: WidgetManager
 
@@ -143,7 +157,7 @@ class SettingsViewModelTests {
         testScope = TestScope(testDispatcher)
         prefs = AppFeaturesPrefs(MockSharedPreferencesProvider())
         every { mockIsTvCheck.invoke() } returns false
-        coEvery { mockRecentManager.getDefaultConnectionFlow() } returns flowOf(Constants.DEFAULT_CONNECTION)
+        coEvery { mockObserveDefaultConnection() } returns flowOf(Constants.DEFAULT_CONNECTION)
         val accountUser = createAccountUser()
         testUserProvider = TestCurrentUserProvider(plusUser, accountUser)
         val currentUser = CurrentUser(testUserProvider)
@@ -203,7 +217,12 @@ class SettingsViewModelTests {
             appFeaturePrefs = prefs,
             isIPv6FeatureFlagEnabled = isIPv6FeatureFlagEnabled,
             isPrivateDnsActiveFlow = IsPrivateDnsActiveFlow(isPrivateDnsActive),
-            isDirectLanConnectionsFeatureFlagEnabled = isDirectLanConnectionsFeatureFlagEnabled
+            isDirectLanConnectionsFeatureFlagEnabled = isDirectLanConnectionsFeatureFlagEnabled,
+            observeDefaultConnection = mockObserveDefaultConnection,
+            isRedesignedBugReportFeatureFlagEnabled = FakeIsRedesignedBugReportFeatureFlagEnabled(true),
+            uiStateStorage = UiStateStorage(UiStateStoreProvider(InMemoryDataStoreFactory()), currentUser),
+            appUpdateManager = NoopAppUpdateManager(),
+            appUpdateBannerStateFlow = FakeAppUpdateBannerStateFlow(),
         )
     }
 

@@ -52,6 +52,7 @@
     <string name="cancel">Annuleren</string>
     <string name="close">Sluiten</string>
     <string name="drawerReportProblem">Een probleem melden</string>
+    <string name="action_done">Klaar</string>
     <string name="action_share">Delen</string>
     <string name="accountFree">Proton Free</string>
     <string name="restrictedMaintenanceTitle">In onderhoud</string>
@@ -425,8 +426,8 @@
      -->
     <string name="upgrade_plus_countries_title_new"><![CDATA[Ontgrendel %1$s in %2$s met <b>VPN Plus</b>.]]></string>
     <string name="mail_app_name" translateable="false">Proton Mail</string>
-    <string name="upgrade_unlimited_all_apps_title">Alle premium Proton-services. Eén simpel abonnement.</string>
-    <string name="upgrade_unlimited_all_apps_description">Krijg volledige privacy dekking met Proton Onbeperkt.</string>
+    <string name="upgrade_unlimited_all_apps_title">Krijg volledige privacy dekking met Proton Unlimited</string>
+    <string name="upgrade_unlimited_all_apps_description">Ontgrendel alle premium functies van Proton VPN, Mail, Agenda, Drive en Pass.</string>
     <string name="upgrade_unlimited_more">En meer</string>
     <string name="upgrade_unlimited_vpn_unlimited_countries">Ontgrendel toegang tot alle landen</string>
     <string name="upgrade_unlimited_vpn_all_features">Alle andere VPN Plus functies</string>
@@ -699,7 +700,7 @@
     <string name="welcome_plus_description">Geniet van de extra privacyfuncties, verhoogde prestaties en geoptimaliseerde VPN-aanpassingen.</string>
     <string name="welcome_plus_feature_security">Geavanceerde beveiligingsfuncties</string>
     <string name="welcome_unlimited_title">Welkom bij Proton Unlimited</string>
-    <string name="welcome_unlimited_description"><![CDATA[Proficiat! U heeft premiumfuncties voor beveiliging en prestaties op alle Proton diensten, plus <b>%1$d&#160;GB</b> totale opslag. <br><br>Geniet van het beste van Proton-privacy.]]></string>
+    <string name="welcome_unlimited_description"><![CDATA[U hebt alle premium Proton VPN-, Mail-, agenda-, drive-, Pass- en portemonnee-functies ontgrendeld — en <b>%1$d&#160;GB</b> totale Opslag.]]></string>
     <string name="welcome_generic_title">Gefeliciteerd</string>
     <string name="welcome_generic_description">U heeft uw abonnement geüpgraded. Geniet van geavanceerde privacyfuncties en next-level prestaties.</string>
     <!-- Example: Up to 10 devices at once
@@ -1394,8 +1395,8 @@
     <!-- Text on a badge displayed next to the "smart" protocol name in settings -->
     <string name="settings_protocol_badge_recommended">Aanbevolen</string>
     <string name="settings_split_tunneling_mode_title">Modus</string>
-    <string name="settings_split_tunneling_mode_standard">Standaard</string>
-    <string name="settings_split_tunneling_mode_inverse">Omgekeerd</string>
+    <string name="settings_split_tunneling_mode_standard">Exclusief</string>
+    <string name="settings_split_tunneling_mode_inverse">Inclusief</string>
     <string name="settings_split_tunneling_mode_description_standard">Bepaalde apps en IP-adressen zijn uitgesloten van de VPN-verbinding.</string>
     <string name="settings_split_tunneling_mode_description_inverse">Alleen geselecteerde apps en IP-adressen verbinden via VPN, al het andere verkeer is onbeschermd.</string>
     <string name="settings_split_tunneling_excluded_apps">Uitgesloten apps</string>
@@ -1545,7 +1546,7 @@
     <string name="widget_status_connecting">Verbinden</string>
     <string name="widget_sign_in">Aanmelden</string>
     <string name="widget_toast_added_message">Widget toegevoegd aan startscherm</string>
-    <string name="settings_advanced_ipv6_title">IPv6</string>
+    <string name="settings_advanced_ipv6_title">IPv6-ondersteuning</string>
     <string name="settings_advanced_ipv6_description">Tunnelt IPv6 verkeer via het VPN. Kan de compatibiliteit met IPv6 netwerken verbeteren.</string>
     <string name="settings_split_tunneling_ipv6_disabled_dialog_message">Om dit adres te gebruiken, moet u IPv6 verbindingen via de VPN-tunnel toestaan.</string>
     <string name="setting_ipv6_disabled_dialog_action_enable">IPv6 inschakelen</string>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Proton AG
+ * Copyright (c) 2024. Proton AG
  *
  * This file is part of ProtonVPN.
  *
@@ -16,17 +16,17 @@
  * You should have received a copy of the GNU General Public License
  * along with ProtonVPN.  If not, see <https://www.gnu.org/licenses/>.
  */
-package com.protonvpn.app
 
-import com.protonvpn.android.utils.toStringHtmlColorNoAlpha
-import org.junit.Assert
-import org.junit.Test
+package com.protonvpn.android.update
 
-class AndroidUtilsTests {
+import android.app.Activity
+import javax.inject.Inject
+import javax.inject.Singleton
 
-    @Test
-    fun testGetStringHtmlColorNoAlpha() {
-        Assert.assertEquals("#0000ff", 0xff.toStringHtmlColorNoAlpha())
-        Assert.assertEquals("#ff0000", 0x80ff0000.toInt().toStringHtmlColorNoAlpha())
-    }
+@Singleton
+class UpdatePromptForStaleVersion @Inject constructor() {
+
+    // Matches the interface in other variants.
+    suspend fun getUpdatePrompt(): AppUpdateInfo? = null
+    fun launchUpdateFlow(activity: Activity, updateInfo: AppUpdateInfo) = Unit
 }

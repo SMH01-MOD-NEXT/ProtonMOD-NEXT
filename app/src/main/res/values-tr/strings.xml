@@ -52,6 +52,7 @@
     <string name="cancel">İptal</string>
     <string name="close">Kapat</string>
     <string name="drawerReportProblem">Sorun bildireceğim</string>
+    <string name="action_done">Tamam</string>
     <string name="action_share">Paylaş</string>
     <string name="accountFree">Proton Free</string>
     <string name="restrictedMaintenanceTitle">Bakım yapılıyor</string>
@@ -195,7 +196,7 @@
     <string name="troubleshootProtonDownDescription"><![CDATA[Sistemimizin durumunu görmek için <a href=\"%1$s\">Proton durumunu</a> sayfasına bakın.]]></string>
     <string name="troubleshootContactUsSectionTitle">Hala yardım gerekiyor mu? Doğrudan bizimle görüşün</string>
     <string name="troubleshootCustomerSupport">Müşteri desteği</string>
-    <string name="settingsAllowAlternativeRoutingTitle">Alternatif yöneltme</string>
+    <string name="settingsAllowAlternativeRoutingTitle">Alternatif yönlendirme</string>
     <string name="settingsAllowAlternativeRoutingDescription"><![CDATA[Proton hizmetlerine erişimin engellenmiş olması durumunda, uygulama Proton sunucularına erişmek için alternatif yolları dener. <a href="%1$s">Ayrıntılı bilgi alın</a>]]></string>
     <string name="troubleshootGovernmentBlockTitle">Hükümet engellemesi</string>
     <string name="troubleshootGovernmentBlockDescription"><![CDATA[Ülkeniz Proton ağına erişimi engelliyor olabilir. Proton ağına erişmek için <a href=\'%1$s\'>Tor</a> kullanmayı deneyin.]]></string>
@@ -425,8 +426,8 @@
      -->
     <string name="upgrade_plus_countries_title_new"><![CDATA[<b>VPN Plus tarifesi</b> ile %2$sdeki %1$sya erişin.]]></string>
     <string name="mail_app_name" translateable="false">Proton Mail</string>
-    <string name="upgrade_unlimited_all_apps_title">Tüm ücretli Proton hizmetleri. Tek bir abonelik.</string>
-    <string name="upgrade_unlimited_all_apps_description">Proton Unlimited ile tam bir gizlilik koruması edinin.</string>
+    <string name="upgrade_unlimited_all_apps_title">Proton Unlimited ile tam bir gizlilik koruması edinin</string>
+    <string name="upgrade_unlimited_all_apps_description">Proton VPN, Mail, Calendar, Drive ve Pass ürünlerinin tüm ücretli özelliklerine erişin.</string>
     <string name="upgrade_unlimited_more">Ve daha fazlası</string>
     <string name="upgrade_unlimited_vpn_unlimited_countries">Tüm ülkelere erişim</string>
     <string name="upgrade_unlimited_vpn_all_features">Tüm diğer VPN Plus özellikleri</string>
@@ -699,7 +700,7 @@
     <string name="welcome_plus_description">Ek gizlilik özelliklerinin, güçlendirilmiş başarımın ve üst düzey VPN özelleştirmenin tadını çıkarın.</string>
     <string name="welcome_plus_feature_security">Gelişmiş güvenlik özellikleri</string>
     <string name="welcome_unlimited_title">Proton Unlimited tarifesine hoş geldiniz</string>
-    <string name="welcome_unlimited_description"><![CDATA[Tebrikler! Tüm Proton hizmetlerinin ücretli güvenlik ve başarım özelliklerini ve ek olarak <b>%1$d&#160; GB</b> depolama alanını kullanabilirsiniz.<br><br>En iyi Proton gizliliğinin tadını çıkarın.]]></string>
+    <string name="welcome_unlimited_description"><![CDATA[Tüm ücretli Proton VPN, Mail, Calendar, Drive ve Pass özellikleri ile toplam <b>%1$d&#160;GB</b> depolama alanına erişim kazandınız.]]></string>
     <string name="welcome_generic_title">Tebrikler</string>
     <string name="welcome_generic_description">Abonelik tarifenizi yükselttiniz. Gelişmiş gizlilik özelliklerinin ve yeni nesil başarımın tadını çıkarın.</string>
     <!-- Example: Up to 10 devices at once
@@ -1205,7 +1206,7 @@
     <string name="info_dialog_ipv6_traffic_title">IPv6 trafiği</string>
     <string name="info_dialog_profiles_description">Profiller, gereksinimlerinize göre uyarlayabileceğiniz ve hızlı erişmek üzere kaydedebileceğiniz özel VPN bağlantılarıdır.\n\nBağlanmak istediğiniz konumu seçin ve ayarlarınızı güvenlik, başarım, oyun veya başka herhangi bir senaryoya göre yapılandırın.</string>
     <string name="info_dialog_ipaddress_description">VPN IP adresiniz gerçek IP adresinizi gizler. Böylece VPN bağlantınızın konumundan geziniyormuşsunuz gibi görünürsünüz ve çevrim içi etkinliğiniz aygıtınız ile ilişkilendirilemez.</string>
-    <string name="info_dialog_ipv6_traffic_description">İnternet Protokolü (IP) aygıtlara adresler atar ve internet trafiğini yöneltir. IPv6, daha fazla adres ve daha iyi bağlantı sunan son sürümdür, ancak henüz her yerde kullanılmıyor.</string>
+    <string name="info_dialog_ipv6_traffic_description">İnternet Protokolü (IP), aygıtlara adresler verir ve internet trafiğini yönlendirir. IPv6, daha fazla adres ve daha iyi bağlantı sunan son sürümdür. Ancak henüz her yerde kullanılmıyor.</string>
     <string name="connection_feature_p2p_title">P2P</string>
     <string name="connection_feature_p2p_description">Bu sunucuda eşler arası dosya paylaşımı kullanılıyor.</string>
     <string name="connection_feature_tor_title">Tor</string>
@@ -1360,8 +1361,8 @@
     <string name="settings_custom_dns_netshield_conflict_dialog_title">NetShield kullanılamayacak</string>
     <string name="settings_custom_dns_netshield_conflict_dialog_message">Özel DNS kullanıldığında NetShield reklamları, izleyicileri ve kötü amaçlı yazılımları süzemez. Ayrıntılı bilgi alın</string>
     <string name="settings_custom_dns_netshield_conflict_dialog_message_tv">Özel DNS kullanıldığında NetShield reklamları, izleyicileri ve kötü amaçlı yazılımları süzemez.</string>
-    <string name="settings_advanced_alternative_routing_title">Alternatif yöneltme</string>
-    <string name="settings_advanced_alternative_routing_description">Proton hizmetlerine erişim ağ üzerinden engelleniyorsa, sitelerimizle bağlantınızı kurmak için alternatif ağ yöneltmesi kullanmayı deneyeceğiz.</string>
+    <string name="settings_advanced_alternative_routing_title">Alternatif yönlendirme</string>
+    <string name="settings_advanced_alternative_routing_description">Proton hizmetlerine erişim ağ üzerinden engelleniyorsa, sitelerimizle bağlantınızı kurmak için alternatif ağ yönlendirmesi kullanmayı deneyeceğiz.</string>
     <string name="settings_advanced_allow_lan_title">Yerel ağ bağlantıları</string>
     <string name="settings_advanced_allow_lan_description">Aygıtınızın aynı yerel ağda bulunan yazıcı, hoparlör gibi diğer aygıtlara bağlanmasını sağlar.</string>
     <string name="settings_advanced_allow_lan_description_tv">Yerel ağınızdaki hoparlörlere, bilgisayarlara ve diğer aygıtlara bağlanın</string>
@@ -1394,8 +1395,8 @@
     <!-- Text on a badge displayed next to the "smart" protocol name in settings -->
     <string name="settings_protocol_badge_recommended">Önerilir</string>
     <string name="settings_split_tunneling_mode_title">Kip</string>
-    <string name="settings_split_tunneling_mode_standard">Standart</string>
-    <string name="settings_split_tunneling_mode_inverse">Ters</string>
+    <string name="settings_split_tunneling_mode_standard">Katma</string>
+    <string name="settings_split_tunneling_mode_inverse">Kat</string>
     <string name="settings_split_tunneling_mode_description_standard">Seçilmiş uygulamalar ve IP adresleri VPN bağlantısına katılmaz.</string>
     <string name="settings_split_tunneling_mode_description_inverse">Yalnızca seçilmiş uygulamalar ve IP adresleri VPN üzerinden bağlanır, diğer tüm trafik korumasızdır.</string>
     <string name="settings_split_tunneling_excluded_apps">Katılmayacak uygulamalar</string>
@@ -1545,7 +1546,7 @@
     <string name="widget_status_connecting">Bağlantı kuruluyor</string>
     <string name="widget_sign_in">Oturum aç</string>
     <string name="widget_toast_added_message">Araç takımı ana ekrana eklendi</string>
-    <string name="settings_advanced_ipv6_title">IPv6</string>
+    <string name="settings_advanced_ipv6_title">IPv6 desteği</string>
     <string name="settings_advanced_ipv6_description">IPv6 trafiğini VPN üzerinden iletir. IPv6 ağları ile uyumluluğu artırabilir.</string>
     <string name="settings_split_tunneling_ipv6_disabled_dialog_message">Bu adresi kullanmak için VPN tüneli üzerinde IPv6 bağlantılarının kurulmasına izin vermeniz gerekir.</string>
     <string name="setting_ipv6_disabled_dialog_action_enable">IPv6 kullanılsın</string>
