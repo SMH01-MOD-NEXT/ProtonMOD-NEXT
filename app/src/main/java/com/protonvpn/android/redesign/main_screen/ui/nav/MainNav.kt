@@ -34,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -199,9 +200,10 @@ object MainScreen : ScreenNoArg<RootNav>("main") {
         val showCountries = activityViewModel.showCountriesFlow.collectAsStateWithLifecycle().value ?: false
         val showGateways = activityViewModel.showGatewaysFlow.collectAsStateWithLifecycle().value ?: false
         val showProfilesDot by activityViewModel.autoShowInfoSheet.collectAsStateWithLifecycle(false)
-        val notificationDots = when {
-            showProfilesDot -> EnumSet.of(MainTarget.Profiles)
-            else -> EnumSet.noneOf(MainTarget::class.java)
+        val showAppVersionUpdateDot by activityViewModel.showAppUpdateDot.collectAsStateWithLifecycle(false)
+        val notificationDots = EnumSet.noneOf(MainTarget::class.java).apply {
+            if (showProfilesDot) add(MainTarget.Profiles)
+            if (showAppVersionUpdateDot) add(MainTarget.Settings)
         }
         Scaffold(
             bottomBar = {
@@ -211,6 +213,7 @@ object MainScreen : ScreenNoArg<RootNav>("main") {
                     showGateways = showGateways,
                     notificationDots = notificationDots,
                     navigateTo = mainNav::navigate,
+                    modifier = Modifier.testTag("mainBottomBar")
                 )
             },
             modifier = modifier,

@@ -33,6 +33,7 @@ import com.protonvpn.android.ui.planupgrade.usecase.WaitForSubscription
 import com.protonvpn.android.utils.Constants
 import com.protonvpn.android.utils.UserPlanManager
 import com.protonvpn.android.utils.formatPrice
+import com.protonvpn.android.utils.ifOrNull
 import com.protonvpn.android.utils.runCatchingCheckedExceptions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -40,22 +41,33 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import me.proton.core.auth.presentation.AuthOrchestrator
 import me.proton.core.domain.entity.UserId
+import me.proton.core.observability.domain.ObservabilityContext
+import me.proton.core.observability.domain.ObservabilityManager
+import me.proton.core.observability.domain.metrics.CheckoutGiapBillingLaunchBillingTotal
+import me.proton.core.observability.domain.metrics.CheckoutGiapBillingProductQueryTotal
+import me.proton.core.observability.domain.metrics.CheckoutGiapBillingQuerySubscriptionsTotal
+import me.proton.core.payment.domain.extension.getCreatePaymentTokenObservabilityData
+import me.proton.core.payment.domain.extension.getValidatePlanObservabilityData
 import me.proton.core.payment.domain.repository.BillingClientError
+import me.proton.core.payment.domain.usecase.ConvertToObservabilityGiapStatus
+import me.proton.core.payment.domain.usecase.PaymentProvider
 import me.proton.core.plan.domain.entity.DynamicPlan
 import me.proton.core.plan.domain.entity.DynamicPlanPrice
 import me.proton.core.plan.domain.usecase.PerformGiapPurchase
 import me.proton.core.plan.presentation.PlansOrchestrator
 import me.proton.core.plan.presentation.entity.PlanCycle
+import me.proton.core.util.kotlin.coroutine.ResultCollector
+import me.proton.core.util.kotlin.coroutine.launchWithResultContext
 import me.proton.core.util.kotlin.filterNotNullValues
 import org.jetbrains.annotations.VisibleForTesting
+import java.util.Optional
 import javax.inject.Inject
+import kotlin.jvm.optionals.getOrNull
 
 @HiltViewModel
 class UpgradeDialogViewModel(
@@ -68,6 +80,8 @@ class UpgradeDialogViewModel(
     private val performGiapPurchase: PerformGiapPurchase<Activity>,
     userPlanManager: UserPlanManager,
     waitForSubscription: WaitForSubscription,
+    private val convertToObservabilityGiapStatus: Optional<ConvertToObservabilityGiapStatus>,
+    override val observabilityManager: ObservabilityManager,
 ) : CommonUpgradeDialogViewModel(
     userId,
     authOrchestrator,
@@ -76,7 +90,7 @@ class UpgradeDialogViewModel(
     upgradeTelemetry,
     userPlanManager,
     waitForSubscription
-) {
+), ObservabilityContext {
 
     @Inject
     constructor(
@@ -89,6 +103,8 @@ class UpgradeDialogViewModel(
         performGiapPurchase: PerformGiapPurchase<Activity>,
         userPlanManager: UserPlanManager,
         waitForSubscription: WaitForSubscription,
+        convertToObservabilityGiapStatus: Optional<ConvertToObservabilityGiapStatus>,
+        observabilityManager: ObservabilityManager,
     ) : this(
         currentUser.userFlow.map { it?.userId },
         authOrchestrator,
@@ -99,12 +115,15 @@ class UpgradeDialogViewModel(
         performGiapPurchase,
         userPlanManager,
         waitForSubscription,
+        convertToObservabilityGiapStatus,
+        observabilityManager,
     )
 
     private class ReloadState(
         val plans: List<String>,
         val cycles: List<PlanCycle>?,
-        val buttonLabelOverride: String? = null
+        val buttonLabelOverride: String? = null,
+        val showDiscountBadge: Boolean = true,
     )
     private var plansForReload: ReloadState? = null
 
@@ -117,7 +136,7 @@ class UpgradeDialogViewModel(
     ) : PlanModel(displayName = giapPlanInfo.displayName, planName = giapPlanInfo.name, cycles = giapPlanInfo.cycles)
 
     fun reloadPlans() {
-        plansForReload?.let { loadPlans(it.plans, it.cycles, it.buttonLabelOverride) }
+        plansForReload?.let { loadPlans(it.plans, it.cycles, it.buttonLabelOverride, it.showDiscountBadge) }
     }
 
     fun loadPlans(allowMultiplePlans: Boolean) {
@@ -129,23 +148,33 @@ class UpgradeDialogViewModel(
                 else ->
                     listOf(Constants.CURRENT_PLUS_PLAN)
             }
-            loadPlans(plans, cycles = null, buttonLabelOverride = null)
+            loadPlans(plans, cycles = null, buttonLabelOverride = null, showDiscountBadge = true)
         }
     }
 
-    fun loadPlans(planNames: List<String>, cycles: List<PlanCycle>?, buttonLabelOverride: String?) {
-        plansForReload = ReloadState(planNames, cycles)
+    fun loadPlans(
+        planNames: List<String>,
+        cycles: List<PlanCycle>?,
+        buttonLabelOverride: String?,
+        showDiscountBadge: Boolean
+    ) {
+        plansForReload = ReloadState(planNames, cycles, null, showDiscountBadge)
         viewModelScope.launch {
             if (!isInAppUpgradeAllowed()) {
                 state.value = State.UpgradeDisabled
             } else {
-                loadGiapPlans(planNames, cycles, buttonLabelOverride)
+                loadGiapPlans(planNames, cycles, buttonLabelOverride, showDiscountBadge)
             }
         }
     }
 
     // The plan first on the list is mandatory and will be preselected.
-    private suspend fun loadGiapPlans(planNames: List<String>, cycleFilter: List<PlanCycle>?, buttonLabelOverride: String?) {
+    private suspend fun loadGiapPlans(
+        planNames: List<String>,
+        cycleFilter: List<PlanCycle>?,
+        buttonLabelOverride: String?,
+        showDiscountBadge: Boolean,
+    ) {
         state.value = State.LoadingPlans(cycleFilter?.size ?: 2, buttonLabelOverride)
         suspend {
             val unorderedPlans = loadGoogleSubscriptionPlans(planNames).map { inputPlanInfo ->
@@ -156,7 +185,10 @@ class UpgradeDialogViewModel(
                 } else {
                     inputPlanInfo
                 }
-                GiapPlanModel(planInfo, calculatePriceInfos(planInfo.cycles, planInfo.dynamicPlan))
+                GiapPlanModel(
+                    planInfo,
+                    calculatePriceInfos(planInfo.cycles, planInfo.dynamicPlan, showDiscountBadge)
+                )
             }
             // Plans order should match order of planNames.
             loadedPlans = planNames.mapNotNull { planName -> unorderedPlans.find { it.planName == planName } }
@@ -212,51 +244,76 @@ class UpgradeDialogViewModel(
         }
     }
 
-    fun pay(activity: Activity, flowType: UpgradeFlowType) = flow {
-        val currentState = state.value
-        require(currentState is State.PurchaseReady)
-        val cycle = requireNotNull(selectedCycle.value) { "Missing plan cycle." }
-        val userId = requireNotNull(userId.first()) { "Missing user ID."}
-        val plan = (currentState.selectedPlan as GiapPlanModel).giapPlanInfo
+    fun pay(activity: Activity, flowType: UpgradeFlowType) = viewModelScope.launchWithResultContext {
+        onResultEnqueueObservabilityEvents(PaymentProvider.GoogleInAppPurchase)
+        flow {
+            val currentState = state.value
+            require(currentState is State.PurchaseReady)
+            val cycle = requireNotNull(selectedCycle.value) { "Missing plan cycle." }
+            val userId = requireNotNull(userId.first()) { "Missing user ID."}
+            val plan = (currentState.selectedPlan as GiapPlanModel).giapPlanInfo
 
-        val purchaseResult = performGiapPurchase(
-            activity,
-            cycle.cycleDurationMonths,
-            plan.dynamicPlan,
-            userId
-        )
-        val resultLog = when (purchaseResult) {
-            is PerformGiapPurchase.Result.GiapSuccess -> "Success" // Don't log any details, like tokens.
-            is PerformGiapPurchase.Result.Error.GiapUnredeemed -> "GiapUnredeemed"  // Don't log any details.
-            is PerformGiapPurchase.Result.Error -> purchaseResult.toString()
-        }
-        ProtonLogger.logCustom(LogCategory.APP, "GIAP purchase result: $resultLog")
-        when (purchaseResult) {
-            is PerformGiapPurchase.Result.Error.GiapUnredeemed -> {
-                emit(State.PlansFallback)
-                onStartFallbackUpgrade()
+            val purchaseResult = performGiapPurchase(
+                activity,
+                cycle.cycleDurationMonths,
+                plan.dynamicPlan,
+                userId
+            )
+            val resultLog = when (purchaseResult) {
+                is PerformGiapPurchase.Result.GiapSuccess -> "Success" // Don't log any details, like tokens.
+                is PerformGiapPurchase.Result.Error.GiapUnredeemed -> "GiapUnredeemed"  // Don't log any details.
+                is PerformGiapPurchase.Result.Error -> purchaseResult.toString()
             }
-            is PerformGiapPurchase.Result.Error.UserCancelled -> emit(currentState.copy(inProgress = false))
-            is PerformGiapPurchase.Result.Error.RecoverableBillingError ->
-                emitError(purchaseResult.error)
-            is PerformGiapPurchase.Result.Error.UnrecoverableBillingError ->
-                emitError(purchaseResult.error)
-            is PerformGiapPurchase.Result.Error ->
-                emitError(billingClientError = null)
-            is PerformGiapPurchase.Result.GiapSuccess -> {
-                onPaymentFinished(plan.name, flowType)
-                emit(State.PurchaseSuccess(plan.name, flowType))
+            ProtonLogger.logCustom(LogCategory.APP, "GIAP purchase result: $resultLog")
+            when (purchaseResult) {
+                is PerformGiapPurchase.Result.Error.GiapUnredeemed -> {
+                    emit(State.PlansFallback)
+                    onStartFallbackUpgrade()
+                }
+                is PerformGiapPurchase.Result.Error.UserCancelled -> emit(currentState.copy(inProgress = false))
+                is PerformGiapPurchase.Result.Error.RecoverableBillingError ->
+                    emitError(purchaseResult.error)
+                is PerformGiapPurchase.Result.Error.UnrecoverableBillingError ->
+                    emitError(purchaseResult.error)
+                is PerformGiapPurchase.Result.Error ->
+                    emitError(billingClientError = null)
+                is PerformGiapPurchase.Result.GiapSuccess -> {
+                    onPaymentFinished(plan.name, flowType)
+                    emit(State.PurchaseSuccess(plan.name, flowType))
+                }
             }
+        }.catch {
+            state.value = State.LoadError(error = it)
+        }.collect {
+            state.value = it
         }
-    }.catch {
-        state.value = State.LoadError(error = it)
-    }.onEach {
-        state.value = it
-    }.launchIn(viewModelScope)
+    }
 
     private fun emitError(billingClientError: BillingClientError?) {
         removeProgressFromPurchaseReady()
         purchaseError.trySend(PurchaseError(billingClientError))
+    }
+
+    // See ProtonPaymentButtonViewModel.onResultEnqueueObservabilityEvents.
+    private suspend fun ResultCollector<*>.onResultEnqueueObservabilityEvents(paymentProvider: PaymentProvider?) {
+        convertToObservabilityGiapStatus.getOrNull()?.let { converter ->
+            onResultEnqueueObservability("getProductsDetails") {
+                CheckoutGiapBillingProductQueryTotal(converter(this))
+            }
+            onResultEnqueueObservability("querySubscriptionPurchases") {
+                CheckoutGiapBillingQuerySubscriptionsTotal(converter(this))
+            }
+            onResultEnqueueObservability("launchBillingFlow") {
+                CheckoutGiapBillingLaunchBillingTotal(converter(this))
+            }
+        }
+
+        onResultEnqueueObservability("validateSubscription") {
+            getValidatePlanObservabilityData(paymentProvider)
+        }
+        onResultEnqueueObservability("createPaymentToken") {
+            getCreatePaymentTokenObservabilityData(paymentProvider)
+        }
     }
 
     companion object {
@@ -272,6 +329,7 @@ class UpgradeDialogViewModel(
         fun calculatePriceInfos(
             cycles: List<CycleInfo>,
             dynamicPlan: DynamicPlan,
+            withSavePercent: Boolean,
         ): Map<PlanCycle, PriceInfo> {
             val currency = dynamicPlan.getSingleCurrency() ?: return emptyMap()
 
@@ -301,7 +359,7 @@ class UpgradeDialogViewModel(
                     PriceInfo(
                         formattedPrice = formatPrice(priceAmount, currency),
                         formattedRenewPrice = renewPriceAmount?.let { formatPrice(it, currency) },
-                        savePercent = calculateSavingsPercentage(perMonthPrice, maxPerMonthPrice),
+                        savePercent = ifOrNull(withSavePercent) { calculateSavingsPercentage(perMonthPrice, maxPerMonthPrice) },
                         formattedPerMonthPrice =
                         if (perMonthPrice != null && cycleInfo.cycle.cycleDurationMonths != 1)
                             formatPrice(perMonthPrice, currency) else null

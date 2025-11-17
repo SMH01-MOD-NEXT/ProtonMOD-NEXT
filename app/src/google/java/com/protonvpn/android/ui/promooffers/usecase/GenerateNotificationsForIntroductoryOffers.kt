@@ -21,6 +21,7 @@ package com.protonvpn.android.ui.promooffers.usecase
 
 import com.protonvpn.android.BuildConfig
 import com.protonvpn.android.appconfig.ApiNotification
+import com.protonvpn.android.appconfig.ApiNotificationActions
 import com.protonvpn.android.appconfig.ApiNotificationIapAction
 import com.protonvpn.android.appconfig.ApiNotificationOffer
 import com.protonvpn.android.appconfig.ApiNotificationOfferButton
@@ -34,6 +35,7 @@ import com.protonvpn.android.di.WallClock
 import com.protonvpn.android.logging.LogCategory
 import com.protonvpn.android.logging.LogLevel
 import com.protonvpn.android.logging.ProtonLogger
+import com.protonvpn.android.utils.Constants
 import com.protonvpn.android.utils.DefaultLocaleProvider
 import dagger.Reusable
 import me.proton.core.plan.presentation.entity.PlanCycle
@@ -81,10 +83,11 @@ class GenerateNotificationsForIntroductoryOffers @Inject constructor(
         if (!isIapClientSidePromoFeatureFlagEnabled()) return emptyList()
         if (currentUser.vpnUser()?.isFreeUser != true) return emptyList()
 
+        val allPlans = listOf(Constants.CURRENT_PLUS_PLAN, Constants.CURRENT_BUNDLE_PLAN)
         val nowMs = clock()
         val baseTimestampMs = getBaseTimestamp()
         if (baseTimestampMs + PROMO_ACTIVITY_PERIOD_END_MS < nowMs) return emptyList()
-        val introductoryOffers = getEligibleIntroductoryOffers() ?: return emptyList()
+        val introductoryOffers = getEligibleIntroductoryOffers(allPlans) ?: return emptyList()
 
         val startTimesS = TimeUnit.MILLISECONDS.toSeconds(baseTimestampMs + PROMO_ACTIVITY_PERIOD_START_MS)
         val endTimeS = TimeUnit.MILLISECONDS.toSeconds(baseTimestampMs + PROMO_ACTIVITY_PERIOD_END_MS)
@@ -243,7 +246,7 @@ class GenerateNotificationsForIntroductoryOffers @Inject constructor(
             ),
             button = ApiNotificationOfferButton(
                 text = config.buttonText,
-                action = "InAppPurchaseFullscreen",
+                action = ApiNotificationActions.IN_APP_PURCHASE_POPUP,
                 iapActionDetails = ApiNotificationIapAction(
                     planName = planName,
                     cycle = planCycle,

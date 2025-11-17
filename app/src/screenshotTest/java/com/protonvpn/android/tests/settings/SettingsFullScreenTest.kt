@@ -40,6 +40,8 @@ import com.protonvpn.android.redesign.settings.ui.customdns.CustomDnsViewState
 import com.protonvpn.android.redesign.vpn.ui.ConnectIntentPrimaryLabel
 import com.protonvpn.android.settings.data.SplitTunnelingMode
 import com.protonvpn.android.theme.ThemeType
+import com.protonvpn.android.update.AppUpdateBannerState
+import com.protonvpn.android.update.AppUpdateInfo
 import com.protonvpn.android.vpn.DnsOverride
 import com.protonvpn.android.vpn.ProtocolSelection
 import me.proton.core.accountmanager.presentation.compose.viewmodel.AccountSettingsViewState
@@ -55,6 +57,7 @@ fun SettingsCredentialless() {
             accountSettingsViewState = settings.credentiallessAccountViewState,
             viewState = settings.settingsViewState,
             onVpnAcceleratorClick = {},
+            onAppUpdateClick = {},
             onAccountClick = {},
             onProtocolClick = {},
             onVpnAcceleratorUpgrade = {},
@@ -93,6 +96,7 @@ fun SettingsPaidProfileConnected() {
             viewState = settingsPaid.settingsViewState,
             onVpnAcceleratorClick = {},
             onAccountClick = {},
+            onAppUpdateClick = {},
             onProtocolClick = {},
             onVpnAcceleratorUpgrade = {},
             onNotificationsClick = {},
@@ -327,6 +331,7 @@ private class SettingsData(isFree: Boolean, connectedToProfile: Boolean = false,
     private val theme = SettingViewState.Theme(ThemeType.Dark)
 
     val settingsViewState = SettingsViewModel.SettingsViewState(
+        appUpdateBannerState = AppUpdateBannerState.Shown(false, AppUpdateInfo(0, 0)),
         profileOverrideInfo = overrideInfo,
         netShield = netshield,
         splitTunneling = splitTunneling,
@@ -343,7 +348,8 @@ private class SettingsData(isFree: Boolean, connectedToProfile: Boolean = false,
         ipV6 = ipV6,
         customDns = customDns,
         showDebugTools = false,
-        theme = theme
+        theme = theme,
+        isRedesignedBugReportFeatureFlagEnabled = true,
     )
 
     val credentiallessAccountViewState =

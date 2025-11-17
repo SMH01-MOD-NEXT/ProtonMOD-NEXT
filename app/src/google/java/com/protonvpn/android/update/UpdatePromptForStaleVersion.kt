@@ -19,83 +19,23 @@
 
 package com.protonvpn.android.update
 
-import android.content.Context
-import androidx.activity.ComponentActivity
-import com.google.android.play.core.appupdate.AppUpdateInfo as GoogleAppUpdateInfo
-import com.google.android.play.core.appupdate.AppUpdateManagerFactory
-import com.google.android.play.core.appupdate.AppUpdateOptions
-import com.google.android.play.core.install.model.AppUpdateType
-import com.google.android.play.core.install.model.UpdateAvailability
-import com.google.android.play.core.ktx.requestAppUpdateInfo
+import android.app.Activity
 import com.protonvpn.android.appconfig.AppFeaturesPrefs
 import com.protonvpn.android.auth.usecase.CurrentUser
 import com.protonvpn.android.di.WallClock
 import com.protonvpn.android.logging.LogCategory
-import com.protonvpn.android.logging.LogLevel
 import com.protonvpn.android.logging.ProtonLogger
 import dagger.Reusable
-import dagger.hilt.android.qualifiers.ApplicationContext
 import me.proton.core.featureflag.domain.ExperimentalProtonFeatureFlag
 import me.proton.core.featureflag.domain.FeatureFlagManager
 import me.proton.core.featureflag.domain.entity.FeatureId
-import java.util.concurrent.CancellationException
-
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.milliseconds
 
-private const val UPDATE_PROMPT_STALENESS_DAYS = 90
+private const val UPDATE_PROMPT_STALENESS_DAYS = 45
 private val PROMPT_INTERVALS_IN_DAYS = listOf(21, 13, 8, 5, 3, 2)
-private const val UPDATE_TYPE = AppUpdateType.IMMEDIATE
-
-data class AppUpdateInfo(
-    val stalenessDays: Int,
-    val updateToken: GoogleAppUpdateInfo
-)
-
-@Singleton
-class AppUpdateManager @Inject constructor(
-    @ApplicationContext appContext: Context
-) {
-    private val updateManager by lazy { AppUpdateManagerFactory.create(appContext) }
-
-    suspend fun checkForUpdate(): AppUpdateInfo? =
-        try {
-            val updateInfo: GoogleAppUpdateInfo = updateManager.requestAppUpdateInfo()
-            logUpdateInfo(updateInfo)
-            val updateStalenessDays = updateInfo.clientVersionStalenessDays()
-
-            if (updateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
-                && updateStalenessDays != null
-                && updateInfo.isUpdateTypeAllowed(UPDATE_TYPE)
-            ) {
-                AppUpdateInfo(updateStalenessDays, updateInfo)
-            } else {
-                null
-            }
-        } catch(e: CancellationException) {
-            throw e
-        } catch(e: Exception) {
-            val message = "Unable to obtain in-app update info $e"
-            ProtonLogger.logCustom(LogLevel.WARN, LogCategory.APP_UPDATE, message)
-            null
-        }
-
-    fun launchUpdateFlow(activity: ComponentActivity, updateInfo: AppUpdateInfo) {
-        updateManager.startUpdateFlow(updateInfo.updateToken, activity, AppUpdateOptions.defaultOptions(UPDATE_TYPE))
-    }
-
-    private fun logUpdateInfo(updateInfo: GoogleAppUpdateInfo) {
-        if (updateInfo.updateAvailability() != UpdateAvailability.UPDATE_NOT_AVAILABLE) {
-            val logInfo = with (updateInfo) {
-                "availability: ${updateAvailability()}, staleness: ${clientVersionStalenessDays()}, " +
-                    "type ${UPDATE_TYPE} allowed: ${isUpdateTypeAllowed(UPDATE_TYPE)})"
-            }
-            ProtonLogger.logCustom(LogCategory.APP_UPDATE, "in-app update: $logInfo")
-        }
-    }
-}
 
 @OptIn(ExperimentalProtonFeatureFlag::class)
 @Reusable
@@ -122,11 +62,12 @@ class UpdatePromptForStaleVersion @Inject constructor(
         resetPromptStateIfNeeded(updateInfo)
 
         return updateInfo.takeIf {
-            updateInfo != null && updateInfo.stalenessDays >= UPDATE_PROMPT_STALENESS_DAYS && isNextPromptDue()
+            updateInfo != null &&
+                    updateInfo.stalenessDays >= UPDATE_PROMPT_STALENESS_DAYS && isNextPromptDue()
         }
     }
 
-    fun launchUpdateFlow(activity: ComponentActivity, updateInfo: AppUpdateInfo) {
+    fun launchUpdateFlow(activity: Activity, updateInfo: AppUpdateInfo) {
         ProtonLogger.logCustom(LogCategory.APP_UPDATE, "In-app update started")
         appFeaturesPrefs.lastUpdatePromptTimestamp = clock()
         appFeaturesPrefs.lastUpdatePromptTryCount++
@@ -144,7 +85,8 @@ class UpdatePromptForStaleVersion @Inject constructor(
 
     private fun resetPromptStateIfNeeded(updateInfo: AppUpdateInfo?) {
         val timeSinceLastPrompt = (clock() - appFeaturesPrefs.lastUpdatePromptTimestamp).milliseconds
-        if (updateInfo == null || updateInfo.stalenessDays.days < timeSinceLastPrompt) {
+        val stalenessDays = updateInfo?.stalenessDays?.days
+        if (stalenessDays == null || stalenessDays < timeSinceLastPrompt) {
             appFeaturesPrefs.lastUpdatePromptTimestamp = 0L
             appFeaturesPrefs.lastUpdatePromptTryCount = 0
         }

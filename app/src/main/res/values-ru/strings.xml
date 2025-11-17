@@ -52,6 +52,7 @@
     <string name="cancel">Отменить</string>
     <string name="close">Закрыть</string>
     <string name="drawerReportProblem">Сообщить о проблеме</string>
+    <string name="action_done">Done</string>
     <string name="action_share">Поделиться</string>
     <string name="accountFree">Proton Free</string>
     <string name="restrictedMaintenanceTitle">На техобслуживании</string>
@@ -138,7 +139,7 @@
     <string name="settingsExcludedApps">Исключенные приложения</string>
     <string name="settingsExcludedAppsEmpty">Добавьте приложения, трафик которых должен идти в обход VPN.</string>
     <string name="settingsIncludedAppsEmpty">Добавьте приложения, которые будут включены в VPN-трафик.</string>
-    <string name="settingsExcludedAppsSelectedHeader">Исключенные приложения (%1$d)</string>
+    <string name="settingsExcludedAppsSelectedHeader">Исключённые приложения (%1$d)</string>
     <string name="settingsIncludedAppsSelectedHeader">Включенные приложения (%1$d)</string>
     <string name="settingsSplitTunnelingAvailableRegularHeader">Все остальные обычные приложения (%1$d)</string>
     <string name="settingsSplitTunnelingAvailableSystemHeader">Все остальные системные приложения (%1$d)</string>
@@ -153,14 +154,14 @@
          an item for app "Internet Browser" will be ready by a screen reader as:
          "Internet Browser, double tap to add to excluded apps"
     -->
-    <string name="accessibility_action_add_excluded_app">Добавить в исключенные приложения</string>
+    <string name="accessibility_action_add_excluded_app">Добавить в исключённые приложения</string>
     <!-- Description for action to remove an application from "excluded apps" in split tunneling settings.
          Only used by accessibility services.
          Example:
          an item for app "Internet Browser" will be ready by a screen reader as:
          "Internet Browser, double tap to remove from excluded apps"
     -->
-    <string name="accessibility_action_remove_excluded_app">Удалить из исключенных приложений</string>
+    <string name="accessibility_action_remove_excluded_app">Удалить из исключённых приложений</string>
     <!-- Description for action to add an application to "included apps" in split tunneling settings.
          Only used by accessibility services.
          Example:
@@ -175,7 +176,7 @@
          "Internet Browser, double tap to remove from included apps"
     -->
     <string name="accessibility_action_remove_included_app">Удалить из включенных приложений</string>
-    <string name="accessibility_action_copy_to_clipboard">Скопировать в буфер обмена</string>
+    <string name="accessibility_action_copy_to_clipboard">Копировать в буфер обмена</string>
     <string name="accessibility_action_item_delete">Удалить</string>
     <string name="accessibility_action_item_move_up">Переместить вверх</string>
     <string name="accessibility_action_item_move_down">Переместить вниз</string>
@@ -212,8 +213,8 @@
     <string name="settingsKillSwitchEnableStep3"><![CDATA[3. Включите \"<b>Постоянную VPN</b>\" и \"<b>Блокировать соединения без VPN</b>\"]]></string>
     <string name="settingsKillSwitchAndroidSettingsButton">Настройки</string>
     <string name="settingsKillSwitchLearnMoreButton">Что такое kill switch?</string>
-    <string name="settingsKillSwitchWarningMain">Когда кнопка kill switch включен, вы не сможете подключиться к:</string>
-    <string name="settingsKillSwitchWarningPoint1">Веб-сайты и приложения, исключенные из вашего подключения к VPN с помощью раздельного туннелирования</string>
+    <string name="settingsKillSwitchWarningMain">Когда kill switch включён, вы не сможете подключиться к:</string>
+    <string name="settingsKillSwitchWarningPoint1">Веб-сайты и приложения, исключённые из вашего подключения к VPN с помощью раздельного туннелирования</string>
     <string name="settingsKillSwitchWarningPoint2">Устройства в вашей локальной сети (LAN)</string>
     <string name="settingsEnableTelemetryTitle">Делиться анонимной статистикой использования</string>
     <string name="settingsEnableTelemetryDescription">Данные об использовании помогают нам преодолевать блокировки VPN и повышать производительность приложения.</string>
@@ -223,7 +224,7 @@
     <string name="settingsTelemetryScreenInfo"><![CDATA[Эта статистика не содержит ваш IP-адрес и не может быть использована для вашей идентификации. Мы никогда не передаем её третьим лицам. <a href="%1$s">Подробнее</a>]]></string>
     <string name="netshield_settings_description_not_html">Защитите себя от рекламы, вредоносных программ и трекеров на веб-сайтах и в приложениях. %1$s</string>
     <string name="netshield_settings_description_tv">Protects you from third-party ads, trackers, and malware. NetShield doesn\'t block ads that are built into streaming services like YouTube and Netflix.</string>
-    <string name="netshield_settings_more_info_title_tv">How NetShield works</string>
+    <string name="netshield_settings_more_info_title_tv">Как работает NetShield</string>
     <string-array name="netshield_settings_more_info_paragraphs_tv">
         <item>NetShield blocks DNS requests to third-party domains known for ads, trackers, and malware.</item>
         <item>This means you won\'t receive ads from your browser or free apps that use third-party ad services.</item>
@@ -286,7 +287,7 @@
     <string name="tv_card_lan_connections_label">LAN</string>
     <string name="tv_card_split_tunneling_label">Раздельное туннелирование</string>
     <string name="tv_card_protocol_label">Протокол</string>
-    <string name="tv_dialog_delete_server_title">Delete server %1$s?</string>
+    <string name="tv_dialog_delete_server_title">Удалить сервер %1$s?</string>
     <string name="tv_detail_default_connection_checkbox_short">Избранная</string>
     <string name="tv_detail_connect_streaming">Стримить с Plus</string>
     <string name="tv_detail_connect">Подключиться</string>
@@ -324,10 +325,10 @@
 
          Example: 76% server load -->
     <string name="tv_server_list_load">Загрузка сервера %1$s%%</string>
-    <string name="tv_recently_used_servers">Recently used servers</string>
-    <string name="tv_available_servers">Available servers</string>
-    <string name="tv_locked_servers">Locked servers</string>
-    <string name="tv_other_servers">Other servers</string>
+    <string name="tv_recently_used_servers">Недавно использованные серверы</string>
+    <string name="tv_available_servers">Доступные серверы</string>
+    <string name="tv_locked_servers">Заблокированные серверы</string>
+    <string name="tv_other_servers">Другие серверы</string>
     <string name="tv_server_list">Список серверов</string>
     <string name="tv_server_list_action_unavailable">Недоступно</string>
     <string name="notification_subscription_expired_title">Срок вашей подписки на тариф Proton VPN истек</string>
@@ -443,8 +444,8 @@
      -->
     <string name="upgrade_plus_countries_title_new"><![CDATA[Разблокируйте %1$s в %2$s с помощью <b>VPN Plus</b>.]]></string>
     <string name="mail_app_name" translateable="false">Proton Mail</string>
-    <string name="upgrade_unlimited_all_apps_title">Все платные службы Proton. Одна простая подписка.</string>
-    <string name="upgrade_unlimited_all_apps_description">Получите полную приватность с Proton Unlimited.</string>
+    <string name="upgrade_unlimited_all_apps_title">Get complete privacy coverage with Proton Unlimited</string>
+    <string name="upgrade_unlimited_all_apps_description">Unlock all premium features from Proton VPN, Mail, Calendar, Drive, and Pass.</string>
     <string name="upgrade_unlimited_more">И другое</string>
     <string name="upgrade_unlimited_vpn_unlimited_countries">Разблокировать все страны</string>
     <string name="upgrade_unlimited_vpn_all_features">Все другие функции VPN Plus</string>
@@ -625,7 +626,7 @@
     <string name="dynamic_report_step1">Шаг 1 из 3</string>
     <string name="dynamic_report_step2">Шаг 2 из 3</string>
     <string name="dynamic_report_step3">Шаг 3 из 3</string>
-    <string name="dynamic_report_your_issue_headline">В чем проблема?</string>
+    <string name="dynamic_report_your_issue_headline">В чём проблема?</string>
     <string name="update_screen_title">Обновить Proton VPN</string>
     <string name="update_screen_description">Вероятность возникновения проблем выше на старых версиях Proton VPN.</string>
     <string name="dialog_create_account_title">Создайте аккаунт, чтобы продолжить</string>
@@ -743,7 +744,7 @@
     <string name="welcome_plus_description">Используйте расширенные функции конфиденциальности, максимальную производительность и настройку VPN нового уровня.</string>
     <string name="welcome_plus_feature_security">Расширенные функции безопасности</string>
     <string name="welcome_unlimited_title">Добро пожаловать в Proton Unlimited</string>
-    <string name="welcome_unlimited_description"><![CDATA[Поздравляем! Вы разблокировали премиальные функции безопасности и производительности на всех службах Proton, а также <b>%1$d&#160;ГБ</b> все хранилище. <br><br> Используйте всё возможности Proton Privacy.]]></string>
+    <string name="welcome_unlimited_description"><![CDATA[You unlocked all premium Proton VPN, Mail, Calendar, Drive, Pass, and Wallet features — and <b>%1$d&#160;GB</b> total storage.]]></string>
     <string name="welcome_generic_title">Поздравляем</string>
     <string name="welcome_generic_description">Вы обновили свою подписку. Воспользуйтесь расширенными функциями конфиденциальности и производительностью нового уровня.</string>
     <!-- Example: Up to 10 devices at once
@@ -1137,7 +1138,7 @@
     <string name="country_filter_countries_list_header">Страны (%1$d)</string>
     <string name="country_filter_cities_list_header">Городов (%1$d)</string>
     <string name="country_filter_states_list_header">Штаты (%1$d)</string>
-    <string name="country_filter_servers_list_header">Servers</string>
+    <string name="country_filter_servers_list_header">Серверы</string>
     <string name="country_filter_secure_core_list_header">Страны с серверами Secure Core (%1$d)</string>
     <string name="country_filter_p2p_list_header">Страны P2P (%1$d)</string>
     <string name="country_filter_p2p_list_header_cities">Города P2P (%1$d)</string>
@@ -1389,7 +1390,7 @@
     <string name="create_profile_title">Создать профиль</string>
     <!-- Title for the screen where user can edit a profile.
          %1$s - name of the profile being edited. -->
-    <string name="edit_profile_title">Редактировать %1$s</string>
+    <string name="edit_profile_title">Изменить %1$s</string>
     <string name="edit_profile_dialog_action">Изменить профиль</string>
     <string name="create_profile_name_hint">Имя профиля</string>
     <string name="create_profile_name_error_empty">Введите имя профиля</string>
@@ -1408,7 +1409,7 @@
          (this doesn\'t apply to other percent sign characters, e.g. ٪)
          %1$s - will have translated learn_more value -->
     <string name="settings_vpn_accelerator_description">Увеличьте скорость подключения до 400%% с помощью технологий, повышающих производительность. %1$s</string>
-    <string name="settings_account_settings_title">Настройки учётной записи</string>
+    <string name="settings_account_settings_title">Настройки аккаунта</string>
     <string name="settings_account_change_password">Изменить пароль</string>
     <string name="settings_account_recovery_email">Резервный адрес электронной почты</string>
     <string name="settings_account_recovery_email_not_set">Не установлен</string>
@@ -1468,8 +1469,8 @@
     <!-- Text on a badge displayed next to the "smart" protocol name in settings -->
     <string name="settings_protocol_badge_recommended">Рекомендуется</string>
     <string name="settings_split_tunneling_mode_title">Режим</string>
-    <string name="settings_split_tunneling_mode_standard">Стандартные</string>
-    <string name="settings_split_tunneling_mode_inverse">Обратное</string>
+    <string name="settings_split_tunneling_mode_standard">Exclude</string>
+    <string name="settings_split_tunneling_mode_inverse">Include</string>
     <string name="settings_split_tunneling_mode_description_standard">Выбранные приложения и IP-адреса исключены из подключения через VPN.</string>
     <string name="settings_split_tunneling_mode_description_inverse">Через VPN подключаются только выбранные приложения и IP-адреса, весь остальной трафик остается незащищенным.</string>
     <string name="settings_split_tunneling_excluded_apps">Исключённые приложения</string>
@@ -1521,7 +1522,7 @@
     <string name="search_zero_screen_info_cities_title">Города</string>
     <string name="search_zero_screen_info_servers_title">Серверы</string>
     <string name="search_zero_screen_info_countries_examples">Швейцария, Соединенные Штаты, Италия, Канада…</string>
-    <string name="search_zero_screen_info_cities_examples">Нью-Йорк, Лондон, Токио, Сидней...</string>
+    <string name="search_zero_screen_info_cities_examples">Нью-Йорк, Лондон, Токио, Сидней…</string>
     <string name="search_zero_screen_info_servers_examples">JP#50, CA#3, IT#14…</string>
     <string name="error_fetching_prices">Ошибка загрузки цен.</string>
     <!-- TV settings -->
@@ -1591,16 +1592,16 @@
     <!-- Displayed as a badge next to create_profile_auto_open_label ("Auto-launch website [NEW]") -->
     <string name="create_profile_auto_open_label_badge">Новая</string>
     <string name="create_profile_auto_open_url_input_label">URL веб-сайта</string>
-    <string name="create_profile_auto_open_url_private_mode_label">Use private browsing mode</string>
+    <string name="create_profile_auto_open_url_private_mode_label">Использовать режим инкогнито</string>
     <!-- Label for disabled "Auto-launch website" setting in profile creation -->
     <string name="profile_auto_open_off">Выключено</string>
     <string name="profile_auto_open_app_failed_to_launch">Connect and Go: application not found</string>
     <!-- Label for enabled "Auto-launch website" setting in profile creation -->
-    <string name="profile_auto_open_website">Open a website</string>
-    <string name="profile_auto_open_app">Open an app</string>
+    <string name="profile_auto_open_website">Открыть веб-сайт</string>
+    <string name="profile_auto_open_app">Открыть приложение</string>
     <string name="create_profile_auto_open_description">Автоматическое открытие выбранного вами веб-сайта при подключении к этому профилю.</string>
-    <string name="create_profile_auto_open_app_input_hint">Select an app</string>
-    <string name="create_profile_auto_open_app_input_label">App</string>
+    <string name="create_profile_auto_open_app_input_hint">Выбрать приложение</string>
+    <string name="create_profile_auto_open_app_input_label">Приложение</string>
     <string name="create_profile_auto_open_app_no_apps">No apps found.</string>
     <string name="profile_auto_open_error_invalid_url">Введите действительный URL</string>
     <string name="nps_how_likely_question">Насколько вероятно, что вы порекомендуете Proton VPN другу или коллеге?</string>
@@ -1620,7 +1621,7 @@
     <string name="widget_status_connecting">Подключение</string>
     <string name="widget_sign_in">Войти</string>
     <string name="widget_toast_added_message">Виджет добавлен на домашний экран</string>
-    <string name="settings_advanced_ipv6_title">IPv6</string>
+    <string name="settings_advanced_ipv6_title">IPv6 support</string>
     <string name="settings_advanced_ipv6_description">Туннелирует трафик IPv6 через VPN. Может улучшить совместимость с сетями IPv6.</string>
     <string name="settings_split_tunneling_ipv6_disabled_dialog_message">Чтобы использовать этот адрес, вам необходимо разрешить подключения к IPv6 через туннель VPN.</string>
     <string name="setting_ipv6_disabled_dialog_action_enable">Включить IPv6</string>
@@ -1638,8 +1639,8 @@
     <string name="no_connections_title">No VPN connections available</string>
     <string name="no_connections_description_loading_error">We couldn’t load the server list.</string>
     <string name="no_connections_description_no_servers">Ask your administrator to enable VPN access for your account.</string>
-    <string name="no_connections_action_refresh">Refresh</string>
-    <string name="no_connections_action_sign_out">Sign out</string>
+    <string name="no_connections_action_refresh">Обновить</string>
+    <string name="no_connections_action_sign_out">Выйти</string>
     <string name="no_connections_help_contact_us"><![CDATA[Need help? <a href="">Contact us</a>]]></string>
     <string name="no_connections_help_follow_instructions"><![CDATA[If your administrator needs help enabling VPN access, send them <a href="">these instructions</a>.]]></string>
 </resources>

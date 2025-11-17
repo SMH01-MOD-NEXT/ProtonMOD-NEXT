@@ -69,6 +69,8 @@ import com.protonvpn.android.profiles.usecases.IsProfileAutoOpenPrivateBrowsingF
 import com.protonvpn.android.profiles.usecases.IsProfileAutoOpenPrivateBrowsingFeatureFlagEnabledImpl
 import com.protonvpn.android.redesign.countries.ui.ServerListViewModelDataAdapter
 import com.protonvpn.android.redesign.countries.ui.ServerListViewModelDataAdapterLegacy
+import com.protonvpn.android.redesign.reports.IsRedesignedBugReportFeatureFlagEnabled
+import com.protonvpn.android.redesign.reports.IsRedesignedBugReportFeatureFlagEnabledImpl
 import com.protonvpn.android.redesign.search.ui.SearchViewModelDataAdapter
 import com.protonvpn.android.redesign.search.ui.SearchViewModelDataAdapterLegacy
 import com.protonvpn.android.servers.IsBinaryServerStatusFeatureFlagEnabled
@@ -97,6 +99,14 @@ import com.protonvpn.android.ui.promooffers.usecase.IsIapClientSidePromoFeatureF
 import com.protonvpn.android.ui.settings.AppIconManager
 import com.protonvpn.android.ui.settings.AppIconManagerImpl
 import com.protonvpn.android.ui.snackbar.DelegatedSnackManager
+import com.protonvpn.android.update.AppUpdateManager
+import com.protonvpn.android.update.AppUpdateManagerImpl
+import com.protonvpn.android.update.AppUpdateBannerStateFlow
+import com.protonvpn.android.update.AppUpdateBannerStateFlowImpl
+import com.protonvpn.android.update.IsAppUpdateBannerFeatureFlagEnabled
+import com.protonvpn.android.update.IsAppUpdateBannerFeatureFlagEnabledImpl
+import com.protonvpn.android.update.ShouldShowAppUpdateDotFlow
+import com.protonvpn.android.update.ShouldShowAppUpdateDotFlowImpl
 import com.protonvpn.android.userstorage.DefaultLocalDataStoreFactory
 import com.protonvpn.android.userstorage.LocalDataStoreFactory
 import com.protonvpn.android.utils.AndroidSharedPreferencesProvider
@@ -386,6 +396,14 @@ object AppModule {
         fun bindAppIconManager(impl: AppIconManagerImpl): AppIconManager
 
         @Binds
+        fun bindAppUpdateManager(impl: AppUpdateManagerImpl): AppUpdateManager
+
+        @Binds
+        fun bindAppUpdateBannerStateFlow(
+            impl: AppUpdateBannerStateFlowImpl
+        ): AppUpdateBannerStateFlow
+
+        @Binds
         fun bindAutoLogin(autoLogin: AutoLoginImpl): AutoLogin
 
         @Binds
@@ -444,6 +462,11 @@ object AppModule {
         fun bindsIsPrivateBrowsingAvailable(impl: GetPrivateBrowsingAvailabilityImpl): GetPrivateBrowsingAvailability
 
         @Binds
+        fun bindIsRedesignedBugReportFeatureFlagEnabled(
+            impl: IsRedesignedBugReportFeatureFlagEnabledImpl,
+        ): IsRedesignedBugReportFeatureFlagEnabled
+
+        @Binds
         fun bindIsTvAutoConnectFeatureFlagEnabled(
             impl: IsTvAutoConnectFeatureFlagEnabledImpl
         ): IsTvAutoConnectFeatureFlagEnabled
@@ -457,6 +480,11 @@ object AppModule {
         fun bindIsTvNetShieldSettingFeatureFlagEnabled(
             impl: IsTvNetShieldSettingFeatureFlagEnabledImpl
         ): IsTvNetShieldSettingFeatureFlagEnabled
+
+        @Binds
+        fun bindIsAppUpdateBannerFeatureFlagEnabled(
+            impl: IsAppUpdateBannerFeatureFlagEnabledImpl
+        ): IsAppUpdateBannerFeatureFlagEnabled
 
         @Binds
         fun bindPeriodicUpdateManager(impl: PeriodicUpdateManagerImpl): PeriodicUpdateManager
@@ -477,6 +505,9 @@ object AppModule {
 
         @Binds
         fun bindServerNameTopStrategyEnabled(impl: ServerNameTopStrategyEnabledImpl): ServerNameTopStrategyEnabled
+
+        @Binds
+        fun bindShouldShowAppUpdateDotFlow(impl: ShouldShowAppUpdateDotFlowImpl): ShouldShowAppUpdateDotFlow
 
         @Binds
         fun bindTelemetryReporter(impl: DefaultTelemetryReporter): TelemetryReporter

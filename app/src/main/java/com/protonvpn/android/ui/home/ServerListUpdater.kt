@@ -197,7 +197,7 @@ class ServerListUpdater @Inject constructor(
     fun onAppStart() {
         scope.launch {
             if (needsUpdate() && currentUser.isLoggedIn())
-                updateServerList()
+                updateServerList(forceFreshUpdate = !serverManager.isDownloadedAtLeastOnce)
         }
     }
 
