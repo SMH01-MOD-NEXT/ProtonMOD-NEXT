@@ -45,19 +45,15 @@ class ConnectingUpdatesRecents @Inject constructor(
 ) {
     init {
         currentUser.vpnUserFlow.flatMapLatestNotNull { user ->
-            if (!user.isFreeUser) {
-                vpnStatusProvider.uiStatus
-                    .map { vpnStatus ->
-                        vpnStatus.connectIntent.takeIf { vpnStatus.state !is VpnState.Disabled }
-                    }
-                    .distinctUntilChanged()
-                    .filterNotNull()
-                    .onEach { connectIntent ->
-                        recentsDao.insertOrUpdateForConnection(user.userId, connectIntent, clock())
-                    }
-            } else {
-                flowOf(Unit)
-            }
+            vpnStatusProvider.uiStatus
+                .map { vpnStatus ->
+                    vpnStatus.connectIntent.takeIf { vpnStatus.state !is VpnState.Disabled }
+                }
+                .distinctUntilChanged()
+                .filterNotNull()
+                .onEach { connectIntent ->
+                    recentsDao.insertOrUpdateForConnection(user.userId, connectIntent, clock())
+                }
         }.launchIn(mainScope)
     }
 }

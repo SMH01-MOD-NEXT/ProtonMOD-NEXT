@@ -80,23 +80,17 @@ class RecentsListViewStateFlow @Inject constructor(
 
     private val dataFlow =
         currentUser.vpnUserFlow.flatMapLatestNotNull { vpnUser ->
-            if (vpnUser.isFreeUser) {
-                // Don't fetch recents data for free users.
-                flowOf(RecentsData(vpnUser, emptyList(), null))
-            } else {
-                combine(
-                    recentsManager.getRecentsList(),
-                    recentsManager.getMostRecentConnection(),
-                ) { recents, mostRecentConnection ->
-                    RecentsData(
-                        user = vpnUser,
-                        recents = recents,
-                        mostRecentConnection = mostRecentConnection,
-                    )
-                }
+            combine(
+                recentsManager.getRecentsList(),
+                recentsManager.getMostRecentConnection(),
+            ) { recents, mostRecentConnection ->
+                RecentsData(
+                    user = vpnUser,
+                    recents = recents,
+                    mostRecentConnection = mostRecentConnection,
+                )
             }
         }
-
     private val viewState: Flow<RecentsListViewState> =
         dataFlow.flatMapLatestNotNull { data ->
             val (vpnUser, recents, mostRecent) = data
@@ -208,11 +202,9 @@ class RecentsListViewStateFlow @Inject constructor(
             vpnState is VpnState.Connected -> CardLabel(R.string.connection_card_label_connected, isClickable = false)
             vpnState.isEstablishingConnection && isChangingServer -> CardLabel(R.string.connection_card_label_changing_server, isClickable = false)
             vpnState.isEstablishingConnection -> CardLabel(R.string.connection_card_label_connecting, isClickable = false)
-            else -> when { // Disconnected
-                isFreeUser -> CardLabel(R.string.connection_card_label_free_connection, isClickable = false)
-                else -> CardLabel(R.string.connection_card_label_default_connection, isClickable = true)
+            else -> CardLabel(R.string.connection_card_label_default_connection, isClickable = true)
             }
-        }
+
         return VpnConnectionCardViewState(
             connectIntentViewState = connectionCardIntentViewState,
             cardLabel = cardLabel,

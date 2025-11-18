@@ -57,6 +57,8 @@ import java.util.Locale
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.flow.map
+
 
 private val remoteSearchDelay = 2.5.seconds
 
@@ -89,20 +91,18 @@ class SearchViewModel @Inject constructor(
         selectedFilter = ServerFilterType.All
     )
 ) {
-    // Remote search gets disabled if the server returns a 429. Avoid making remote search requests until the search
-    // screen is closed. Opening search again will obviously start with remote search enabled again.
     private var remoteSearchDisabled = false
-
     private var searchQuery by savedStateHandle.state<String>("", "search_query")
     val searchQueryFlow = savedStateHandle.getStateFlow("search_query", searchQuery)
+    private val userTierFlow = currentUser.vpnUserFlow.map {
+        it?.userTier ?: VpnUser.FREE_TIER
+    }
 
     init {
         searchQueryFlow
             .transformLatest<String, Unit> { query ->
                 if (!remoteSearchDisabled) {
                     delay(remoteSearchDelay)
-                    // Search results are added to the server list and thus will bubble up to search results
-                    // (if they match the filters).
                     val result = remoteSearch(query)
                     if (result is FetchServerResult.TryLater)
                         remoteSearchDisabled = true
@@ -118,30 +118,37 @@ class SearchViewModel @Inject constructor(
         currentConnection: ActiveConnection?
     ): Flow<SearchViewState> =
         searchQueryFlow.flatMapLatest { query ->
-            val isFreeUser = userTier == VpnUser.FREE_TIER
             if (query.isEmpty()) {
-                // Reset filter each time we leave/reset search
                 mainSaveState = mainSaveState.copy(selectedFilter = ServerFilterType.All)
                 flowOf(SearchViewState.ZeroScreen)
             } else combine(
                 savedStateFlow,
                 searchDataAdapter.search(query, locale),
-            ) { savedState, queryResult ->
+                userTierFlow,
+            ) { savedState, queryResult, effectiveTier ->
                 val filter = savedState.selectedFilter
                 val result = queryResult[filter] ?: SearchResults.empty
 
+                val filteredResult = result.copy(
+                    countries = result.countries.filter { it.tier <= effectiveTier },
+                    states   = result.states.filter   { it.tier <= effectiveTier },
+                    cities   = result.cities.filter   { it.tier <= effectiveTier },
+                    servers  = result.servers.filter  { it.tier <= effectiveTier }
+                )
+
                 val uiItems = buildList {
-                    if (!result.isEmpty() && isFreeUser)
+                    if (!filteredResult.isEmpty() && effectiveTier == VpnUser.FREE_TIER)
                         add(ServerGroupUiItem.Banner(ServerGroupUiItem.BannerType.Search(dataAdapter.countriesCount())))
-                    addAll(resultSection(R.string.country_filter_countries_list_header, result.countries, filter, userTier, currentConnection, locale))
-                    addAll(resultSection(R.string.country_filter_states_list_header, result.states, filter, userTier, currentConnection, locale))
-                    addAll(resultSection(R.string.country_filter_cities_list_header, result.cities, filter, userTier, currentConnection, locale))
-                    addAll(resultSection(R.string.country_filter_servers_list_header, result.servers, filter, userTier, currentConnection, locale))
+                    addAll(resultSection(R.string.country_filter_countries_list_header, filteredResult.countries, filter, effectiveTier, currentConnection, locale))
+                    addAll(resultSection(R.string.country_filter_states_list_header,   filteredResult.states,   filter, effectiveTier, currentConnection, locale))
+                    addAll(resultSection(R.string.country_filter_cities_list_header,   filteredResult.cities,   filter, effectiveTier, currentConnection, locale))
+                    addAll(resultSection(R.string.country_filter_servers_list_header,  filteredResult.servers,  filter, effectiveTier, currentConnection, locale))
                 }
 
-                val onFilterSelect = { selectedFilter : ServerFilterType ->
+                val onFilterSelect = { selectedFilter: ServerFilterType ->
                     mainSaveState = ServerGroupsMainScreenSaveState(selectedFilter)
                 }
+
                 SearchViewState.Result(
                     ServerGroupsMainScreenState(
                         selectedFilter = filter,

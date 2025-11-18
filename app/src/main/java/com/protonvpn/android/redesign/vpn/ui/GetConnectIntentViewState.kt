@@ -116,8 +116,7 @@ class GetConnectIntentViewState @Inject constructor(
     private suspend fun getUnnamedIntentViewState(connectIntent: ConnectIntent, isFreeUser: Boolean, connectedServer: Server? = null): ConnectIntentViewState {
         return when (connectIntent) {
             is ConnectIntent.FastestInCountry -> {
-                if (isFreeUser && connectIntent.country.isFastest) fastestFreeServer(connectedServer)
-                else fastestInCountry(connectIntent, connectedServer)
+                fastestInCountry(connectIntent, connectedServer)
             }
             is ConnectIntent.FastestInCity -> fastestInCity(connectIntent, connectedServer)
             is ConnectIntent.FastestInState -> fastestInState(connectIntent, connectedServer)

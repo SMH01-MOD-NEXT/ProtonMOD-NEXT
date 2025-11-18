@@ -19,6 +19,8 @@
 
 package com.protonvpn.android.redesign.countries.ui
 
+import com.protonvpn.android.auth.data.VpnUser
+import com.protonvpn.android.auth.usecase.CurrentUser
 import com.protonvpn.android.servers.api.SERVER_FEATURE_P2P
 import com.protonvpn.android.servers.api.SERVER_FEATURE_TOR
 import com.protonvpn.android.servers.Server
@@ -32,6 +34,7 @@ import com.protonvpn.android.redesign.vpn.isVirtualLocation
 import com.protonvpn.android.servers.ServerManager2
 import com.protonvpn.android.utils.hasFlag
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.util.EnumSet
@@ -41,14 +44,26 @@ import kotlin.math.roundToInt
 class ServerListViewModelDataAdapterLegacy @Inject constructor(
     private val serverManager2: ServerManager2,
     private val translator: Translator,
+    private val currentUser: CurrentUser,
 ) : ServerListViewModelDataAdapter {
+
+    private val userTierFlow = currentUser.vpnUserFlow.map {
+        // set to true to test for plus user
+        val forcePlus = false
+        if (forcePlus) {
+            VpnUser.PLUS_TIER
+        } else {
+            it?.userTier ?: VpnUser.FREE_TIER
+        }
+    }
 
     override suspend fun countriesCount(): Int = serverManager2.getCountriesCount()
 
     override suspend fun availableTypesFor(country: CountryId?): Set<ServerFilterType> {
         val servers = serverManager2.allServersFlow.first()
         val availableTypes = initAvailableTypes()
-        for (server in servers) {
+        val userTier = userTierFlow.first()
+        for (server in servers.asFilteredSequence(userTier)) {
             if (country == null || server.exitCountry == country.countryCode)
                 availableTypes.update(server)
         }
@@ -58,14 +73,14 @@ class ServerListViewModelDataAdapterLegacy @Inject constructor(
     override fun countries(
         filter: ServerFilterType
     ): Flow<List<ServerGroupItemData.Country>> =
-        serverManager2.allServersFlow.map { servers ->
+        combine(serverManager2.allServersFlow, userTierFlow) { servers, userTier ->
             val secureCore = filter == ServerFilterType.SecureCore
             val entryCountryId = if (secureCore)
                 CountryId.fastest
             else
                 null
             val countries = servers
-                .asFilteredSequence(filter)
+                .asFilteredSequence(userTier, filter)
                 .map { it.exitCountry }
                 .distinct()
                 .toList()
@@ -74,7 +89,7 @@ class ServerListViewModelDataAdapterLegacy @Inject constructor(
                     .getVpnExitCountry(countryCode, secureCore)
                     ?.serverList
                     ?.takeIf { it.isNotEmpty() }
-                    ?.asFilteredSequence(filter)
+                    ?.asFilteredSequence(userTier, filter)
                     ?.toList()
                     ?.toCountryItem(countryCode, entryCountryId)
             }
@@ -84,8 +99,8 @@ class ServerListViewModelDataAdapterLegacy @Inject constructor(
         filter: ServerFilterType,
         country: CountryId
     ): Flow<List<ServerGroupItemData.City>> =
-        serverManager2.allServersFlow.map { servers ->
-            val filteredServers = servers.asFilteredSequence(filter, country)
+        combine(serverManager2.allServersFlow, userTierFlow) { servers, userTier ->
+            val filteredServers = servers.asFilteredSequence(userTier, filter, country)
             val hasStates = filteredServers.any { it.state != null }
             val groupBySelector = if (hasStates) Server::state else Server::city
             val availableTypes = initAvailableTypes()
@@ -103,37 +118,39 @@ class ServerListViewModelDataAdapterLegacy @Inject constructor(
         cityStateId: CityStateId?,
         gatewayName: String?,
     ): Flow<List<ServerGroupItemData.Server>> =
-        serverManager2.allServersFlow.map { servers ->
+        combine(serverManager2.allServersFlow, userTierFlow) { servers, userTier ->
             val availableTypes = initAvailableTypes()
             servers
-                .asFilteredSequence(filter, country, cityStateId, gatewayName)
+                .asFilteredSequence(userTier, filter, country, cityStateId, gatewayName)
                 .onEach { availableTypes.update(it) }
                 .map(Server::toServerItem)
                 .toList()
         }
 
     override fun entryCountries(country: CountryId): Flow<List<ServerGroupItemData.Country>> =
-        serverManager2.allServersFlow.map { _ ->
-            val servers = serverManager2.getVpnExitCountry(country.countryCode, true)?.serverList
-            if (servers == null)
+        combine(serverManager2.allServersFlow, userTierFlow) { servers, userTier ->
+            val exitCountryServers = serverManager2.getVpnExitCountry(country.countryCode, true)?.serverList
+            if (exitCountryServers == null)
                 emptyList()
             else {
-                val entryCountries = servers.groupBy { it.entryCountry }
+                val entryCountries = exitCountryServers.groupBy { it.entryCountry }
                 entryCountries.map { (entryCode, servers) ->
                     servers.toCountryItem(country.countryCode, CountryId(entryCode))
                 }
             }
         }
 
-    override suspend fun haveStates(country: CountryId): Boolean =
-        serverManager2.allServersFlow.first()
-            .asFilteredSequence(country = country)
+    override suspend fun haveStates(country: CountryId): Boolean {
+        val userTier = userTierFlow.first()
+        return serverManager2.allServersFlow.first()
+            .asFilteredSequence(userTier, country = country)
             .any { it.state != null }
+    }
 
     override fun gateways(): Flow<List<ServerGroupItemData.Gateway>> =
-        serverManager2.allServersFlow.map { servers ->
+        combine(serverManager2.allServersFlow, userTierFlow) { servers, userTier ->
             val gateways = servers
-                .asFilteredSequence(forceIncludeGateways = true)
+                .asFilteredSequence(userTier, forceIncludeGateways = true)
                 .groupBy { it.gatewayName }
             gateways.mapNotNull { (gatewayName, servers) ->
                 gatewayName?.let { servers.toGatewayItem(gatewayName) }
@@ -151,21 +168,20 @@ class ServerListViewModelDataAdapterLegacy @Inject constructor(
     }
 
     private fun List<Server>.asFilteredSequence(
+        userTier: Int,
         filter: ServerFilterType = ServerFilterType.All,
         country: CountryId? = null,
         cityStateId: CityStateId? = null,
         gatewayName: String? = null,
         forceIncludeGateways: Boolean = false,
     ): Sequence<Server> {
-        val includeFreeServers = gatewayName != null || forceIncludeGateways
         return asSequence().filter { server ->
-            // We shouldn't show free servers on the list
-            (includeFreeServers || !server.isPlusServer) &&
+            (server.tier <= userTier) &&
                 filter.isMatching(server) &&
                 (country == null || country.countryCode == server.exitCountry) &&
                 (cityStateId == null || cityStateId.matches(server)) &&
                 ((forceIncludeGateways && gatewayName == null) || gatewayName == server.gatewayName)
-            }
+        }
     }
 }
 

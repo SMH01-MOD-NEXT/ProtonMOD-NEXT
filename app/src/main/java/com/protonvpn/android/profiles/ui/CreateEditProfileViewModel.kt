@@ -305,7 +305,6 @@ class CreateEditProfileViewModel @Inject constructor(
             SettingViewState.LanConnections(
                 profileSettings.lanConnections,
                 profileSettings.lanConnectionsAllowDirect,
-                isFreeUser = false,
                 overrideProfilePrimaryLabel = null
             )
         }

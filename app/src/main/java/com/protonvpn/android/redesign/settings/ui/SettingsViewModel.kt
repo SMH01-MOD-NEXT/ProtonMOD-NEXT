@@ -31,7 +31,6 @@ import com.protonvpn.android.auth.usecase.CurrentUser
 import com.protonvpn.android.auth.usecase.uiName
 import com.protonvpn.android.components.InstalledAppsProvider
 import com.protonvpn.android.managed.ManagedConfig
-import com.protonvpn.android.netshield.NetShieldAvailability
 import com.protonvpn.android.netshield.NetShieldProtocol
 import com.protonvpn.android.netshield.getNetShieldAvailability
 import com.protonvpn.android.redesign.recents.data.DefaultConnection
@@ -53,7 +52,6 @@ import com.protonvpn.android.update.AppUpdateBannerState
 import com.protonvpn.android.update.AppUpdateBannerStateFlow
 import com.protonvpn.android.update.AppUpdateInfo
 import com.protonvpn.android.update.AppUpdateManager
-import com.protonvpn.android.update.IsAppUpdateBannerFeatureFlagEnabled
 import com.protonvpn.android.utils.BuildConfigUtils
 import com.protonvpn.android.utils.combine
 import com.protonvpn.android.vpn.DnsOverride
@@ -72,7 +70,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
@@ -175,7 +172,6 @@ class SettingsViewModel @Inject constructor(
 
         class VpnAccelerator(
             vpnAcceleratorSettingValue: Boolean,
-            isFreeUser: Boolean,
             override val iconRes: Int = CoreR.drawable.ic_proton_rocket
         ) : SettingViewState<Boolean>(
             value = vpnAcceleratorSettingValue,
@@ -254,8 +250,7 @@ class SettingsViewModel @Inject constructor(
         class LanConnections(
             value: Boolean,
             val allowDirectConnections: Boolean?,
-            isFreeUser: Boolean,
-            overrideProfilePrimaryLabel: ConnectIntentPrimaryLabel.Profile?,
+            overrideProfilePrimaryLabel: ConnectIntentPrimaryLabel.Profile?
         ) : SettingViewState<Boolean>(
             value = value,
             isRestricted = false,
@@ -395,24 +390,21 @@ class SettingsViewModel @Inject constructor(
             val currentModeAppNames =
                 installedAppsProvider.getNamesOfInstalledApps(settings.splitTunneling.currentModeApps())
 
-            val defaultConnectionSetting = if (isFree)
-                null
-            else {
-                val defaultRecent = defaultConnection.getRecentIdOrNull()?.let { recentsManager.getRecentById(it) }
-                val recent = defaultRecent?.let { getConnectIntentViewState.forRecent(it, false) }
-                SettingViewState.DefaultConnectionSettingState(
-                    predefinedTitle = when (defaultConnection) {
-                        DefaultConnection.LastConnection -> R.string.settings_last_connection_title
-                        DefaultConnection.FastestConnection -> R.string.fastest_country
-                        else -> null
-                    },
-                    recentLabel = recent?.primaryLabel,
-                )
-            }
+            val defaultRecent = defaultConnection.getRecentIdOrNull()?.let { recentsManager.getRecentById(it) }
+            val recent = defaultRecent?.let { getConnectIntentViewState.forRecent(it, false) }
+            val defaultConnectionSetting = SettingViewState. DefaultConnectionSettingState(
+                predefinedTitle = when (defaultConnection) {
+                    DefaultConnection.LastConnection -> R.string.settings_last_connection_title
+                    DefaultConnection.FastestConnection -> R.string.fastest_country
+                    else -> null
+                },
+                recentLabel = recent?.primaryLabel,
+            )
+
             SettingsViewState(
                 profileOverrideInfo = profileOverrideInfo,
                 netShield = netShieldSetting,
-                vpnAccelerator = SettingViewState.VpnAccelerator(settings.vpnAccelerator, isFree),
+                vpnAccelerator = SettingViewState.VpnAccelerator(settings.vpnAccelerator),
                 splitTunneling = SettingViewState.SplitTunneling(
                     isEnabled = settings.splitTunneling.isEnabled,
                     mode = settings.splitTunneling.mode,
@@ -426,7 +418,6 @@ class SettingsViewModel @Inject constructor(
                 lanConnections = SettingViewState.LanConnections(
                     settings.lanConnections,
                     allowDirectConnections = settings.lanConnectionsAllowDirect.takeIf { isDirectLanConnectionsFeatureFlagEnabled() },
-                    isFree,
                     profileOverrideInfo?.primaryLabel
                 ),
                 natType = SettingViewState.Nat(NatType.fromRandomizedNat(settings.randomizedNat), isFree, profileOverrideInfo?.primaryLabel),

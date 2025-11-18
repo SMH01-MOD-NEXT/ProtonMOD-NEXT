@@ -19,6 +19,7 @@
 
 package com.protonvpn.android.servers
 
+import com.protonvpn.android.auth.data.VpnUser
 import com.protonvpn.android.servers.api.ConnectingDomain
 import com.protonvpn.android.servers.api.LogicalServer
 import com.protonvpn.android.servers.api.LogicalServerV1
@@ -68,7 +69,10 @@ data class Server(
 ) : java.io.Serializable {
 
     @Transient
-    val online: Boolean = isFreeServer && isOnline && connectingDomains.any { it.isOnline }
+    val online: Boolean
+        get() {
+            return isOnline && connectingDomains.any { it.isOnline }
+        }
 
     val isTor get() = features.hasFlag(SERVER_FEATURE_TOR)
 

@@ -103,35 +103,20 @@ class DefaultConnectionViewStateFlow @Inject constructor(
     private val viewState: Flow<DefaultConnectionViewState> = combine(
         currentUser.vpnUserFlow,
         effectiveCurrentUserSettings.protocol,
-    ) { vpnUser, settingsProtocol ->
-        vpnUser?.let { user -> Pair(user, settingsProtocol) }
-    }.flatMapLatestNotNull { (vpnUser, settingsProtocol) ->
-        if (vpnUser.isFreeUser) {
-            val recentsViewState = createRecentsViewState(
-                recents = emptyList(),
-                vpnUser = vpnUser,
-                defaultConnection = Constants.DEFAULT_CONNECTION,
-                settingsProtocol = settingsProtocol,
-            )
+        serverManager.serverListVersion,
+        recentsManager.getRecentsList(),
+        observeDefaultConnection(),
+    ) { vpnUser, settingsProtocol, _, recents, defaultConnection ->
+        if (vpnUser == null) return@combine null
 
-            flowOf(DefaultConnectionViewState(recents = recentsViewState)).filterNotNull()
-        } else {
-            combine(
-                serverManager.serverListVersion,
-                recentsManager.getRecentsList(),
-                observeDefaultConnection(),
-            ) { _, recents, defaultConnection ->
-                val recentsViewState = createRecentsViewState(
-                    recents = recents,
-                    vpnUser = vpnUser,
-                    defaultConnection = defaultConnection,
-                    settingsProtocol = settingsProtocol,
-                )
+        val recentsViewState = createRecentsViewState(
+            recents = recents,
+            vpnUser = vpnUser,
+            defaultConnection = defaultConnection,
+            settingsProtocol = settingsProtocol,
+        )
 
-                DefaultConnectionViewState(recents = recentsViewState)
-            }
-        }
-    }
+        DefaultConnectionViewState(recents = recentsViewState) }.filterNotNull()
 
     override suspend fun collect(collector: FlowCollector<DefaultConnectionViewState>) =
         viewState.collect(collector)

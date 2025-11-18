@@ -81,7 +81,6 @@ fun LanSettingPreview() {
             lan = SettingsViewModel.SettingViewState.LanConnections(
                 true,
                 allowDirectConnections = false,
-                isFreeUser = false,
                 overrideProfilePrimaryLabel = null
             ),
             onToggleLan = {},
