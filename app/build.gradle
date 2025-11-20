@@ -72,17 +72,26 @@ if (localFile.exists()) {
 tasks.register('generateConstants') {
     def outDir = "$projectDir/src/main/java/com/protonvpn/android"
     def outFile = file("$outDir/Constants.kt")
+
+    if (localFile.exists()) {
+        localFile.withInputStream { localProps.load(it) }
+    }
+
+    def tgBotToken = localProps['TG_BOT_TOKEN'] ?: System.getenv("TG_BOT_TOKEN") ?: ""
+    def tgChatId   = localProps['TG_CHAT_ID']   ?: System.getenv("TG_CHAT_ID")   ?: ""
+
     doLast {
         outFile.text = """
             package com.protonvpn.android
 
             object Constants {
-                const val TG_BOT_TOKEN: String = "${localProps['TG_BOT_TOKEN'] ?: ""}"
-                const val TG_CHAT_ID: String = "${localProps['TG_CHAT_ID'] ?: ""}"
+                const val TG_BOT_TOKEN: String = "$tgBotToken"
+                const val TG_CHAT_ID: String = "$tgChatId"
             }
         """.stripIndent()
     }
 }
+
 
 preBuild.dependsOn(generateConstants)
 

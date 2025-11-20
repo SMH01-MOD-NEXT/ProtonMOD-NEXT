@@ -34,7 +34,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -45,6 +44,7 @@ import java.io.IOException
 import java.io.InterruptedIOException
 import java.net.InetSocketAddress
 import java.net.Proxy
+import java.net.ServerSocket
 import java.net.Socket
 import kotlin.system.measureTimeMillis
 
@@ -63,6 +63,9 @@ class VlessManager private constructor(private val context: Context) {
     @Volatile private var isReady = false
     @Volatile private var bestServerHost: String? = null
     @Volatile private var errorMessage: String? = null
+
+    // Current local port being used by Xray
+    private var currentProxyPort: Int = STARTING_PORT
 
     private val xrayBinary: File by lazy {
         File(context.applicationInfo.nativeLibraryDir, XRAY_BINARY_NAME)
@@ -101,7 +104,10 @@ class VlessManager private constructor(private val context: Context) {
                 var connectionSuccessful = false
                 for ((index, serverConfig) in sortedServers.withIndex()) {
                     val host = serverConfig.extractHost()
-                    Log.i(TAG, "Attempt #${index + 1}: Connecting to server '${serverConfig.optString("ps", "Unnamed")}' ($host)")
+
+                    // Find a free port for this attempt
+                    currentProxyPort = findFreePort(STARTING_PORT)
+                    Log.i(TAG, "Attempt #${index + 1}: Connecting to server '${serverConfig.optString("ps", "Unnamed")}' ($host) using local port $currentProxyPort")
 
                     try {
                         // Create a mutable copy for modification
@@ -127,7 +133,6 @@ class VlessManager private constructor(private val context: Context) {
                             }
                         }
 
-                        // --- ДОБАВЛЕНО: Внедряем локальный SOCKS inbound ---
                         val inboundSettings = JSONObject().apply {
                             put("auth", "noauth")
                             put("udp", true)
@@ -135,14 +140,13 @@ class VlessManager private constructor(private val context: Context) {
                         }
                         val socksInbound = JSONObject().apply {
                             put("listen", "127.0.0.1")
-                            put("port", PROXY_PORT) // Используем наш порт 10809
+                            put("port", currentProxyPort) // Use the dynamically selected port
                             put("protocol", "socks")
                             put("settings", inboundSettings)
-                            put("tag", "socks-in") // Просто тег
+                            put("tag", "socks-in")
                         }
                         val inboundsArray = JSONArray().put(socksInbound)
                         configToUse.put("inbounds", inboundsArray)
-                        // --- КОНЕЦ ДОБАВЛЕНИЯ ---
 
                         val configFile = File(context.filesDir, "config.json")
                         configFile.writeText(configToUse.toString(4))
@@ -150,7 +154,7 @@ class VlessManager private constructor(private val context: Context) {
 
                         startXray()
                         waitForProxyReady()
-                        Log.d(TAG, "Local proxy on port $PROXY_PORT confirmed ready for attempt #${index + 1}.")
+                        Log.d(TAG, "Local proxy on port $currentProxyPort confirmed ready for attempt #${index + 1}.")
 
                         if (testProxyConnection()) {
                             Log.i(TAG, "Proxy connection test SUCCESSFUL for server: $host")
@@ -200,14 +204,6 @@ class VlessManager private constructor(private val context: Context) {
         outReaderJob?.cancel()
         errReaderJob?.cancel()
 
-        // --- УДАЛЕНО: runBlocking ---
-        // A short blocking wait to ensure logs are flushed if possible.
-        // runBlocking { // <--- ЭТО ВЫЗЫВАЛО ДЕДЛОК
-        //     try { outReaderJob?.join() } catch (_: Exception) {}
-        //     try { errReaderJob?.join() } catch (_: Exception) {}
-        // }
-        // --- КОНЕЦ УДАЛЕНИЯ ---
-
         outReaderJob = null
         errReaderJob = null
 
@@ -237,9 +233,11 @@ class VlessManager private constructor(private val context: Context) {
     fun isReady(): Boolean = isReady
     fun getBestServerHost(): String? = bestServerHost
     fun getErrorMessage(): String? = errorMessage
+    fun getCurrentPort(): Int = currentProxyPort // Expose current port if needed
 
     private suspend fun testProxyConnection(): Boolean = withContext(Dispatchers.IO) {
-        val socksProxy = Proxy(Proxy.Type.SOCKS, InetSocketAddress("127.0.0.1", PROXY_PORT))
+        // Use the current dynamic port
+        val socksProxy = Proxy(Proxy.Type.SOCKS, InetSocketAddress("127.0.0.1", currentProxyPort))
         val client = OkHttpClient.Builder()
             .proxy(socksProxy)
             .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
@@ -264,29 +262,45 @@ class VlessManager private constructor(private val context: Context) {
 
     private suspend fun fetchAndDecodeConfigs(): List<JSONObject> = withContext(Dispatchers.IO) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val cachedTimestamp = prefs.getLong(PREF_KEY_TIMESTAMP, 0L)
         val cachedConfigs = prefs.getString(PREF_KEY_CONFIGS, null)
-        val isCacheValid = (System.currentTimeMillis() - cachedTimestamp) < CACHE_DURATION_MS
 
-        if (cachedConfigs != null && isCacheValid) {
-            Log.i(TAG, "Using cached VLESS configs.")
-            return@withContext decodeConfigs(cachedConfigs)
+        Log.i(TAG, "Attempting to fetch latest VLESS configs (Network First)...")
+
+        try {
+            val client = OkHttpClient()
+            val request = Request.Builder().url(GITHUB_CONFIG_URL).build()
+            val response = client.newCall(request).execute()
+
+            if (!response.isSuccessful) {
+                throw IOException("Failed to download configs. Code: ${response.code}")
+            }
+
+            val newConfigsBody = response.body?.string() ?: throw IOException("Empty response body from server")
+
+            // Eternal cache logic: update only if data has changed
+            if (newConfigsBody != cachedConfigs) {
+                Log.i(TAG, "New configs found. Updating eternal cache.")
+                prefs.edit()
+                    .putString(PREF_KEY_CONFIGS, newConfigsBody)
+                    .apply() // Save only Base64 body
+            } else {
+                Log.i(TAG, "Remote configs are identical to cache. Using fresh data.")
+            }
+
+            return@withContext decodeConfigs(newConfigsBody)
+
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to fetch remote configs: ${e.message}. Checking fallback cache.")
+
+            // Fallback logic: use cache only if network is unavailable
+            if (cachedConfigs != null) {
+                Log.i(TAG, "Using cached VLESS configs (Offline/Fallback mode).")
+                return@withContext decodeConfigs(cachedConfigs)
+            } else {
+                Log.e(TAG, "Config fetch failed and no cache is available.")
+                throw Exception("Unable to get VLESS configs. No network and no cache.", e)
+            }
         }
-
-        Log.i(TAG, "Cache invalid or missing. Fetching new VLESS configs...")
-        val client = OkHttpClient()
-        val response = client.newCall(Request.Builder().url(GITHUB_CONFIG_URL).build()).execute()
-        if (!response.isSuccessful) throw Exception("Failed to download configs. Code: ${response.code}")
-
-        val body = response.body?.string() ?: throw Exception("Empty response body")
-
-        // Save new configs and timestamp to cache
-        prefs.edit()
-            .putString(PREF_KEY_CONFIGS, body)
-            .putLong(PREF_KEY_TIMESTAMP, System.currentTimeMillis())
-            .apply()
-
-        return@withContext decodeConfigs(body)
     }
 
     private fun decodeConfigs(configBody: String): List<JSONObject> {
@@ -342,7 +356,7 @@ class VlessManager private constructor(private val context: Context) {
         val command = listOf(xrayBinary.absolutePath, "run", "-c", configFile.absolutePath)
         xrayProcess = ProcessBuilder(command).start()
 
-        // Чтение stdout
+        // Read stdout
         outReaderJob = coroutineScope.launch {
             val reader = xrayProcess?.inputStream?.bufferedReader() ?: return@launch
             try {
@@ -359,7 +373,7 @@ class VlessManager private constructor(private val context: Context) {
             }
         }
 
-        // Чтение stderr
+        // Read stderr
         errReaderJob = coroutineScope.launch {
             val reader = xrayProcess?.errorStream?.bufferedReader() ?: return@launch
             try {
@@ -379,6 +393,26 @@ class VlessManager private constructor(private val context: Context) {
         Log.d(TAG, "Xray process started with command: ${command.joinToString(" ")}")
     }
 
+    /**
+     * Iterates through ports starting from [startPort] to find an available one.
+     * Checks up to 100 ports.
+     */
+    private fun findFreePort(startPort: Int): Int {
+        var port = startPort
+        for (i in 0..100) {
+            val current = port + i
+            try {
+                // Try to bind to the port to check availability
+                ServerSocket(current).use {
+                    return current
+                }
+            } catch (e: IOException) {
+                // Port occupied, try next
+                continue
+            }
+        }
+        throw IOException("No free ports found starting from $startPort")
+    }
 
     private suspend fun waitForProxyReady(
         timeoutMs: Long = 10_000L,
@@ -387,25 +421,26 @@ class VlessManager private constructor(private val context: Context) {
         val startTime = System.currentTimeMillis()
         while (isActive && System.currentTimeMillis() - startTime < timeoutMs) {
             try {
+                // Connect to the currently selected port
                 Socket().use { socket ->
-                    socket.connect(InetSocketAddress("127.0.0.1", PROXY_PORT), 200)
+                    socket.connect(InetSocketAddress("127.0.0.1", currentProxyPort), 200)
                 }
-                return@withContext // Успех
+                return@withContext // Success
             } catch (_: Exception) {
-                // Не удалось подключиться, проверяем, жив ли процесс, прежде чем ждать
+                // Connection failed, check if process is alive before waiting
                 try {
                     val exitCode = xrayProcess?.exitValue()
-                    // Если мы здесь, процесс завершился.
+                    // Process terminated
                     throw IllegalStateException("Xray process terminated prematurely with exit code $exitCode. Check [Xray-err] logs for details.")
                 } catch (e: IllegalThreadStateException) {
-                    // Это ожидаемый случай: процесс все еще работает, поэтому мы продолжаем.
+                    // Expected case: process is still running, continue
                 }
 
                 if (isActive) delay(intervalMs) else break
             }
         }
-        // Цикл завершился без успеха
-        throw IllegalStateException("Proxy on port $PROXY_PORT did not become available within ${timeoutMs}ms.")
+        // Loop finished without success
+        throw IllegalStateException("Proxy on port $currentProxyPort did not become available within ${timeoutMs}ms.")
     }
 
 
@@ -421,13 +456,11 @@ class VlessManager private constructor(private val context: Context) {
         private const val XRAY_BINARY_NAME = "libxray.so"
         private const val GITHUB_CONFIG_URL = "https://raw.githubusercontent.com/SMH01-MOD-NEXT/mod-next-proxy/refs/heads/main/vless.txt"
         private const val PING_TIMEOUT_MS = 2000
-        const val PROXY_PORT = 10809 // Изменен порт с 10808 на 10809
+        const val STARTING_PORT = 10809
 
         // --- Cache Constants ---
         private const val PREFS_NAME = "vless_cache"
         private const val PREF_KEY_CONFIGS = "cached_configs"
-        private const val PREF_KEY_TIMESTAMP = "cache_timestamp"
-        private const val CACHE_DURATION_MS = 2 * 24 * 60 * 60 * 1000L // 2 дня
 
         @Volatile
         private var INSTANCE: VlessManager? = null
@@ -436,6 +469,9 @@ class VlessManager private constructor(private val context: Context) {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: VlessManager(context.applicationContext).also { INSTANCE = it }
             }
+        }
+        fun getLocalPort(): Int {
+            return INSTANCE?.getCurrentPort() ?: STARTING_PORT
         }
     }
 }

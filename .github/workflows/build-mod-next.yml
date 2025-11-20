@@ -30,6 +30,9 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build APKs (with debug key)
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         run: ./gradlew assembleProductionGooglePlayStoreDebug assembleProductionGooglePlayStoreRelease
 
       - name: Check for signing secrets

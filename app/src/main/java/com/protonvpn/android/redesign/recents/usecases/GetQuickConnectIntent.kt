@@ -39,10 +39,6 @@ class GetQuickConnectIntent @Inject constructor(
     suspend operator fun invoke(): ConnectIntent {
         val vpnUser = currentUser.vpnUser()
 
-        if (vpnUser == null || vpnUser.isFreeUser) {
-            return ConnectIntent.Default
-        }
-
         val protocolSelection = userSettings.protocol.first()
 
         return when (val defaultConnection = observeDefaultConnection().first()) {

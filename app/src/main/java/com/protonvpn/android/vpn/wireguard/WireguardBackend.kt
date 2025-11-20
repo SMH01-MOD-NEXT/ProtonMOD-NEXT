@@ -137,14 +137,6 @@ class WireguardBackend @Inject constructor(
     }
 
     override suspend fun connect(connectionParams: ConnectionParams) {
-        val prefs = context.getSharedPreferences("protonmod_prefs", Context.MODE_PRIVATE)
-        if (prefs.getBoolean("proxy_enabled", false)) {
-            prefs.edit().putBoolean("proxy_enabled", false).apply()
-            withContext(Dispatchers.IO) {
-                okHttp?.connectionPool?.evictAll()
-            }
-            Log.d("ProxyToggle", "Proxy disabled on VPN connect")
-        }
 
         super.connect(connectionParams)
 
@@ -265,11 +257,6 @@ class WireguardBackend @Inject constructor(
         }
         withContext(wireGuardIo) {
             backend.setState(testTunnel, Tunnel.State.DOWN, null)
-        }
-        val prefs = context.getSharedPreferences("protonmod_prefs", Context.MODE_PRIVATE)
-        if (!prefs.getBoolean("proxy_enabled", false)) {
-            prefs.edit().putBoolean("proxy_enabled", true).apply()
-            Log.d("ProxyToggle", "Proxy re-enabled on VPN disconnect")
         }
     }
 

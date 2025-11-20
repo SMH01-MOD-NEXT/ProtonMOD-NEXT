@@ -123,15 +123,6 @@ class OpenVpnBackend @Inject constructor(
 
     override suspend fun connect(connectionParams: ConnectionParams) {
 
-        val prefs = appContext.getSharedPreferences("protonmod_prefs", Context.MODE_PRIVATE)
-        if (prefs.getBoolean("proxy_enabled", false)) {
-            prefs.edit().putBoolean("proxy_enabled", false).apply()
-            withContext(Dispatchers.IO) {
-                okHttp?.connectionPool?.evictAll()
-            }
-            android.util.Log.d("ProxyToggle", "Proxy disabled on OpenVPN connect")
-        }
-
         super.connect(connectionParams)
         startOpenVPN(null, connectionParamsUuid = connectionParams.uuid)
     }
@@ -141,11 +132,6 @@ class OpenVpnBackend @Inject constructor(
         // disconnected state - request pause regardless of the state
         startOpenVPN(PAUSE_VPN, connectionParamsUuid = null)
         waitForDisconnect()
-        val prefs = appContext.getSharedPreferences("protonmod_prefs", Context.MODE_PRIVATE)
-        if (!prefs.getBoolean("proxy_enabled", false)) {
-            prefs.edit().putBoolean("proxy_enabled", true).apply()
-            android.util.Log.d("ProxyToggle", "Proxy re-enabled on OpenVPN disconnect")
-        }
     }
 
     private fun startOpenVPN(action: String?, connectionParamsUuid: UUID?) {

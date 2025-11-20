@@ -231,8 +231,6 @@ open class ProtonApplication : Application() {
                                     button.backgroundTintList = ColorStateList.valueOf(bgColor)
                                     button.setTextColor(textColor)
                                 }
-
-// Инициализация кнопки и обработчика
                                 val isEnabled = prefs.getBoolean("proxy_enabled", false)
                                 updateStyle(button, isEnabled)
 
@@ -243,24 +241,6 @@ open class ProtonApplication : Application() {
 
                                     val app = button.context.applicationContext as ProtonApplicationHilt
                                     val vlessManager = VlessManager.getInstance(app)
-
-                                    if (newState) {
-                                        if (!vlessManager.isRunning()) {
-                                            app.appScope.launch(Dispatchers.IO) {
-                                                vlessManager.start()
-                                            }
-                                        } else {
-                                            Log.d("ProxyToggle", "VlessManager уже запущен, повторный старт не требуется")
-                                        }
-                                    } else {
-                                        if (vlessManager.isRunning()) {
-                                            app.appScope.launch(Dispatchers.IO) {
-                                                app.okHttpClient.connectionPool.evictAll()
-                                            }
-                                        } else {
-                                            Log.d("ProxyToggle", "VlessManager уже остановлен, действие отменено")
-                                        }
-                                    }
                                 }
                             }
                         },

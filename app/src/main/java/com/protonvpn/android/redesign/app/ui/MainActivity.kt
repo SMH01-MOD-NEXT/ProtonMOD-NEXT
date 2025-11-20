@@ -148,7 +148,6 @@ class MainActivity : VpnUiDelegateProvider, AppCompatActivity() {
                 caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
 
         if (hasInternet) {
-            // ⚡️ Запускаем VlessManager только если сеть есть
             val app = application as ProtonApplicationHilt
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
