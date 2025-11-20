@@ -334,6 +334,7 @@ class SettingsViewModel @Inject constructor(
         val versionName: String,
         val isRedesignedBugReportFeatureFlagEnabled: Boolean,
         val appUpdateBannerState: AppUpdateBannerState,
+        val showSingInOnAnotherDeviceQr: Boolean,
     )
 
     enum class UiEvent {
@@ -439,6 +440,7 @@ class SettingsViewModel @Inject constructor(
                 theme = SettingViewState.Theme(settings.theme),
                 isRedesignedBugReportFeatureFlagEnabled = isRedesignedBugReportFeatureFlagEnabled,
                 appUpdateBannerState = appUpdateBannerState,
+                showSingInOnAnotherDeviceQr = !managedConfig.isManaged,
             )
         }.shareIn(viewModelScope, SharingStarted.WhileSubscribed(1_000), replay = 1)
 
