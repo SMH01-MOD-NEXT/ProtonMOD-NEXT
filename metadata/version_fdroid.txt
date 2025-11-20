@@ -1,2 +1,2 @@
-versionName=5.14.49.0
-versionCode=605144900
+versionName=5.14.55.0
+versionCode=605145500
