@@ -51,7 +51,6 @@ class UpdateServerListFromApi @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     @WallClock private val wallClock: () -> Long,
     private val serverManager: ServerManager,
-    private val serverPinger: ServerPinger,
     private val prefs: ServerListUpdaterPrefs,
     private val updateWithBinaryStatus: UpdateServersWithBinaryStatus,
     private val binaryServerStatusEnabled: IsBinaryServerStatusEnabled,
@@ -134,7 +133,6 @@ class UpdateServerListFromApi @Inject constructor(
             debugCountryCheck(newList)
 
             serverManager.setServers(newList,  statusId = fetchResult.statusId,lang, retainIDs = retainIDs)
-            serverPinger.pingServers(newList)
             serverManager.updateTimestamp()
             if (!freeOnly)
                 prefs.lastFullUpdateTimestamp = wallClock()
