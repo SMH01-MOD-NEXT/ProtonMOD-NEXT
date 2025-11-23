@@ -26,6 +26,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.util.Log
 import com.protonvpn.android.proxy.VlessManager
+import com.protonvpn.android.utils.Storage
 import com.protonvpn.android.vpn.VpnDns
 import dagger.Module
 import dagger.Provides
@@ -65,8 +66,7 @@ class VlessProxySelector(
         }
 
         // 2. REAL-TIME CHECK: Is the Proxy Toggle enabled?
-        val prefs = context.getSharedPreferences("protonmod_prefs", Context.MODE_PRIVATE)
-        val enabled = prefs.getBoolean("proxy_enabled", false)
+        val enabled = Storage.getBoolean("proxy_enabled", false)
 
         if (!enabled) {
             Log.d("VlessProxySelector", "State: VPN Inactive, Proxy Disabled. Routing: DIRECT. Host: $host")

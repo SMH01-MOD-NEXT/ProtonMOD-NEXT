@@ -239,7 +239,6 @@ class ProtonApplicationHilt : ProtonApplication(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         SentryIntegration.initAccountSentry()
-        ProxyPrefs(this).setEnabled(false)
 
         if (isMainProcess()) {
             initDependencies()

@@ -24,9 +24,6 @@ import android.app.ApplicationExitInfo
 import android.content.Context
 import android.content.res.ColorStateList
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
 import android.view.View
 import android.widget.Button
 import androidx.core.content.ContextCompat
@@ -86,13 +83,10 @@ import com.protonvpn.android.widget.data.WidgetTracker
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
-import dagger.hilt.android.internal.Contexts.getApplication
 import dagger.hilt.components.SingletonComponent
 import go.Seq
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.launch
 import me.proton.core.accountmanager.data.AccountStateHandler
 import me.proton.core.eventmanager.data.CoreEventManagerStarter
 import me.proton.core.humanverification.presentation.HumanVerificationStateHandler
@@ -205,8 +199,6 @@ open class ProtonApplication : Application() {
                                     R.id.btnProxyToggle
                                 ) ?: return
 
-                                val prefs = activity.getSharedPreferences("protonmod_prefs", Context.MODE_PRIVATE)
-
                                 fun updateStyle(button: Button, enabled: Boolean) {
                                     val context = button.context
 
@@ -231,12 +223,12 @@ open class ProtonApplication : Application() {
                                     button.backgroundTintList = ColorStateList.valueOf(bgColor)
                                     button.setTextColor(textColor)
                                 }
-                                val isEnabled = prefs.getBoolean("proxy_enabled", false)
+                                val isEnabled = Storage.getBoolean("proxy_enabled", false)
                                 updateStyle(button, isEnabled)
 
                                 button.setOnClickListener {
-                                    val newState = !prefs.getBoolean("proxy_enabled", false)
-                                    prefs.edit().putBoolean("proxy_enabled", newState).apply()
+                                    val newState = !Storage.getBoolean("proxy_enabled", false)
+                                    Storage.saveBoolean("proxy_enabled", newState)
                                     updateStyle(button, newState)
 
                                     val app = button.context.applicationContext as ProtonApplicationHilt
@@ -256,18 +248,6 @@ open class ProtonApplication : Application() {
             override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
             override fun onActivityDestroyed(activity: Activity) {}
         })
-
-    if (isMainProcess()) {
-            initLogger()
-            ProtonLogger.log(AppProcessStart, "version: " + BuildConfig.VERSION_NAME)
-
-            initNotificationChannel(this)
-
-            // Initialize go-libraries early
-            Seq.touch()
-
-            CoreLogger.set(VpnCoreLogger())
-        }
     }
 
     fun initDependencies() {
@@ -330,15 +310,10 @@ open class ProtonApplication : Application() {
         }
     }
 
-
-
-
-
     private fun initPreferences() {
         val storagePrefsName = "Storage"
         migrateProtonPreferences(this, "Proton-Secured", storagePrefsName)
         val preferences = getSharedPreferences(storagePrefsName, MODE_PRIVATE)
-        Storage.setPreferences(preferences)
         Storage.setPreferences(preferences)
     }
 
