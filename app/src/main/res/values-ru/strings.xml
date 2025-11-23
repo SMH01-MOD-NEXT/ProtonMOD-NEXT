@@ -63,6 +63,8 @@
     <string name="listItemMaintenance">На техобслуживании</string>
     <string name="proxy_toggle_off">Использовать прокси</string>
     <string name="proxy_toggle_on">Прокси включён</string>
+    <string name="settings_proxy_title">ИИспользовать прокси</string>
+    <string name="settings_proxy_summary">Перенаправлять трафик через прокси, когда VPN отключен</string>
     <string name="insufficientPermissionsTitle">Требуется действие пользователя</string>
     <string name="insufficientPermissionsDetails">Не удалось установить VPN соединение автоматически. Пожалуйста, подключитесь вручную один раз, чтобы предоставить разрешения.</string>
     <string name="log_title">Журнал</string>

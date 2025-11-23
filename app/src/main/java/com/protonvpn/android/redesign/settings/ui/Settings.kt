@@ -48,9 +48,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,7 +69,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.protonvpn.android.R
 import com.protonvpn.android.base.ui.LabelBadge
 import com.protonvpn.android.base.ui.ProtonVpnPreview
-import com.protonvpn.android.update.VpnUpdateBanner
 import com.protonvpn.android.profiles.data.ProfileColor
 import com.protonvpn.android.profiles.data.ProfileIcon
 import com.protonvpn.android.profiles.ui.nav.ProfileCreationStepTarget
@@ -85,6 +89,8 @@ import com.protonvpn.android.ui.planupgrade.UpgradeVpnAcceleratorHighlightsFragm
 import com.protonvpn.android.ui.settings.OssLicensesActivity
 import com.protonvpn.android.ui.settings.SettingsTelemetryActivity
 import com.protonvpn.android.update.AppUpdateInfo
+import com.protonvpn.android.update.VpnUpdateBanner
+import com.protonvpn.android.utils.Storage
 import com.protonvpn.android.utils.openUrl
 import me.proton.core.accountmanager.presentation.compose.AccountSettingsInfo
 import me.proton.core.accountmanager.presentation.compose.viewmodel.AccountSettingsViewModel
@@ -97,10 +103,10 @@ import me.proton.core.compose.theme.defaultSmallWeak
 import me.proton.core.compose.theme.defaultWeak
 import me.proton.core.devicemigration.presentation.settings.SignInToAnotherDeviceItem
 import me.proton.core.domain.entity.UserId
+import me.proton.core.presentation.R as CoreR
 import me.proton.core.presentation.utils.openMarketLink
 import me.proton.core.telemetry.presentation.ProductMetricsDelegateOwner
 import me.proton.core.telemetry.presentation.compose.LocalProductMetricsDelegateOwner
-import me.proton.core.presentation.R as CoreR
 
 
 @SuppressLint("InlinedApi")
@@ -341,6 +347,39 @@ fun SettingsView(
                     trailingIconTint = false,
                     settingValue = viewState.vpnAccelerator.settingValueView
                 )
+
+                var isProxyEnabled by remember { mutableStateOf(Storage.getBoolean("proxy_enabled", false)) }
+                SettingRow(
+                    title = stringResource(id = R.string.settings_proxy_title),
+                    subtitleComposable = {
+                        Text(
+                            text = stringResource(id = R.string.settings_proxy_summary),
+                            style = ProtonTheme.typography.defaultWeak
+                        )
+                    },
+                    leadingComposable = {
+                        Icon(
+                            painter = painterResource(id = CoreR.drawable.ic_proton_shield),
+                            contentDescription = null,
+                            tint = ProtonTheme.colors.iconNorm
+                        )
+                    },
+                    trailingComposable = {
+                        Switch(
+                            checked = isProxyEnabled,
+                            onCheckedChange = {
+                                isProxyEnabled = it
+                                Storage.saveBoolean("proxy_enabled", it)
+                            }
+                        )
+                    },
+                    onClick = {
+                        val newState = !isProxyEnabled
+                        isProxyEnabled = newState
+                        Storage.saveBoolean("proxy_enabled", newState)
+                    }
+                )
+
                 SettingRowWithIcon(
                     icon = CoreR.drawable.ic_proton_sliders,
                     title = stringResource(id = R.string.settings_advanced_settings_title),

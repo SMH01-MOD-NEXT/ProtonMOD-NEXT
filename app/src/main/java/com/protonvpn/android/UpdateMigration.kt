@@ -56,6 +56,14 @@ class UpdateMigration @Inject constructor(
             whatsNewWidget(strippedOldVersionCode)
             remove_cert_storage_v1(strippedOldVersionCode)
             migrateTvLanSetting(strippedOldVersionCode)
+            enableProxyOnUpdate(strippedOldVersionCode)
+        }
+    }
+
+    @SuppressWarnings("MagicNumber")
+    private fun enableProxyOnUpdate(oldVersionCode: Int) {
+        if (oldVersionCode <= 5_14_89_00) {
+            Storage.saveBoolean("proxy_enabled", true)
         }
     }
 

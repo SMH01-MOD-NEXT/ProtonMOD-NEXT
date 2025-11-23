@@ -56,6 +56,8 @@
     <string name="drawerReportProblem">Report an issue</string>
     <string name="proxy_toggle_off">Use proxy</string>
     <string name="proxy_toggle_on">Proxy enabled</string>
+    <string name="settings_proxy_title">Enable Proxy</string>
+    <string name="settings_proxy_summary">Redirect all traffic through the proxy when the VPN is disconnected</string>
     <string name="drawerSignOut">@string/menuActionSignOut</string>
     <string name="action_done">Done</string>
     <string name="action_share">Share</string>
