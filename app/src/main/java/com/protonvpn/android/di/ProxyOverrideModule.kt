@@ -83,7 +83,7 @@ class VlessProxySelector(
 
         // 4. If Enabled AND Ready -> Use Proxy
         // Get the current port dynamically from the instance
-        val currentPort = vlessManager.getCurrentPort()
+        val currentPort = VlessManager.PROXY_PORT
         Log.d("VlessProxySelector", "State: VPN Inactive, Proxy Enabled & Ready. Routing: SOCKS5 ($currentPort). Host: $host")
         return listOf(
             Proxy(
