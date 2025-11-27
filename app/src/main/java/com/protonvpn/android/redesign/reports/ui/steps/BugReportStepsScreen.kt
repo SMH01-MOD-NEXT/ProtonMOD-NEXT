@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Scaffold
@@ -31,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,6 +43,7 @@ import com.protonvpn.android.base.ui.TopAppBarBackIcon
 import com.protonvpn.android.base.ui.TopAppBarTitle
 import com.protonvpn.android.base.ui.VpnSolidButton
 import com.protonvpn.android.base.ui.indicators.StepsProgressIndicator
+import com.protonvpn.android.redesign.base.ui.collectAsEffect
 import com.protonvpn.android.redesign.base.ui.largeScreenContentPadding
 import com.protonvpn.android.redesign.base.ui.nav.SafeNavGraphBuilder
 import com.protonvpn.android.redesign.base.ui.nav.ScreenNoArg
@@ -49,6 +52,7 @@ import com.protonvpn.android.redesign.reports.ui.BugReportNav
 import com.protonvpn.android.redesign.reports.ui.BugReportViewModel
 import com.protonvpn.android.redesign.reports.ui.steps.form.BugReportFormScreen
 import com.protonvpn.android.update.AppUpdateInfo
+import kotlinx.coroutines.flow.receiveAsFlow
 import me.proton.core.compose.theme.ProtonTheme
 
 object BugReportStepsScreen : ScreenNoArg<BugReportNav>("bugReportSteps") {
@@ -59,9 +63,23 @@ object BugReportStepsScreen : ScreenNoArg<BugReportNav>("bugReportSteps") {
         onClose: () -> Unit,
         onOpenLink: (String) -> Unit,
         onUpdateApp: (AppUpdateInfo) -> Unit,
+        onReportSubmitError: (BugReportViewModel.BugReportNetworkError) -> Unit,
+        onReportSubmitSuccess: () -> Unit,
         modifier: Modifier = Modifier,
     ) = addToGraph(this) {
         val viewState = bugReportViewModel.viewStateFlow.collectAsStateWithLifecycle().value
+
+        bugReportViewModel.eventChannelReceiver.receiveAsFlow().collectAsEffect { event ->
+            when (event) {
+                is BugReportViewModel.Event.OnBugReportSubmitError -> {
+                    onReportSubmitError(event.networkError)
+                }
+
+                BugReportViewModel.Event.OnBugReportSubmitSuccess -> {
+                    onReportSubmitSuccess()
+                }
+            }
+        }
 
         viewState?.let { state ->
             BugReportStepsRoute(
@@ -72,6 +90,7 @@ object BugReportStepsScreen : ScreenNoArg<BugReportNav>("bugReportSteps") {
                 onContactUsClick = {
                     bugReportStepsNav.navigateInternal(screen = BugReportFormScreen)
                 },
+                onSubmitReportClick = bugReportViewModel::onSubmitReport,
             ) {
                 bugReportStepsNav.NavHost(
                     modifier = Modifier.fillMaxSize(),
@@ -80,6 +99,9 @@ object BugReportStepsScreen : ScreenNoArg<BugReportNav>("bugReportSteps") {
                     onOpenLink = onOpenLink,
                     onSelectCategory = bugReportViewModel::onSelectCategory,
                     onSetCurrentStep = bugReportViewModel::onUpdateCurrentStep,
+                    onFormEmailChanged = bugReportViewModel::onFormEmailChanged,
+                    onFormFieldChanged = bugReportViewModel::onFormFieldChanged,
+                    onFormSendLogsChanged = bugReportViewModel::onFormSendLogsChanged,
                 )
             }
         }
@@ -92,6 +114,7 @@ private fun BugReportStepsRoute(
     onClose: () -> Unit,
     onNavigateBack: () -> Unit,
     onContactUsClick: () -> Unit,
+    onSubmitReportClick: () -> Unit,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
@@ -133,11 +156,11 @@ private fun BugReportStepsRoute(
         },
         bottomBar = {
             BugReportStepBottomBar(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(all = 16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 step = viewState.currentStep,
+                isLoading = viewState.isLoading,
                 onContactUsClick = onContactUsClick,
+                onSubmitReportClick = onSubmitReportClick,
             )
         },
     ) { innerPaddingValues ->
@@ -161,14 +184,16 @@ private fun BugReportStepsRoute(
 @Composable
 private fun BugReportStepBottomBar(
     step: BugReportViewModel.BugReportSteps,
+    isLoading: Boolean,
     onContactUsClick: () -> Unit,
+    onSubmitReportClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (step) {
         BugReportViewModel.BugReportSteps.Menu -> Unit
         BugReportViewModel.BugReportSteps.Suggestions -> {
             BottomAppBar(
-                modifier = modifier,
+                modifier = modifier.padding(all = 16.dp),
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -189,7 +214,23 @@ private fun BugReportStepBottomBar(
         }
 
         BugReportViewModel.BugReportSteps.Form -> {
-            // Will be implemented in VPNAND-2393
+            val keyboardController = LocalSoftwareKeyboardController.current
+
+            BottomAppBar(
+                modifier = modifier
+                    .padding(horizontal = 16.dp)
+                    .imePadding(),
+            ) {
+                VpnSolidButton(
+                    text = stringResource(id = R.string.send_report),
+                    isLoading = isLoading,
+                    onClick = {
+                        keyboardController?.hide()
+
+                        onSubmitReportClick()
+                    },
+                )
+            }
         }
     }
 }

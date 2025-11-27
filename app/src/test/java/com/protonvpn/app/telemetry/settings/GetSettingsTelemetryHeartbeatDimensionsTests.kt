@@ -5,8 +5,10 @@ import com.protonvpn.android.redesign.recents.usecases.ObserveDefaultConnection
 import com.protonvpn.android.settings.data.CustomDnsSettings
 import com.protonvpn.android.settings.data.EffectiveCurrentUserSettings
 import com.protonvpn.android.settings.data.LocalUserSettings
+import com.protonvpn.android.settings.data.SplitTunnelingMode
+import com.protonvpn.android.settings.data.SplitTunnelingSettings
 import com.protonvpn.android.telemetry.CommonDimensions
-import com.protonvpn.android.telemetry.settings.GetSettingsTelemetrySnapshotDimensions
+import com.protonvpn.android.telemetry.settings.GetSettingsTelemetryHeartbeatDimensions
 import com.protonvpn.android.theme.ThemeType
 import com.protonvpn.android.tv.settings.FakeIsTvAutoConnectFeatureFlagEnabled
 import com.protonvpn.android.ui.settings.AppIconManager
@@ -37,7 +39,7 @@ import org.junit.Test
 import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class GetSettingsTelemetrySnapshotDimensionsTests {
+class GetSettingsTelemetryHeartbeatDimensionsTests {
 
     @MockK
     private lateinit var mockAppIconManager: AppIconManager
@@ -51,7 +53,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
     @MockK
     private lateinit var mockWidgetTracker: WidgetTracker
 
-    private lateinit var getSettingsTelemetrySnapshotDimensions: GetSettingsTelemetrySnapshotDimensions
+    private lateinit var getSettingsTelemetryHeartbeatDimensions: GetSettingsTelemetryHeartbeatDimensions
 
     private lateinit var getTruncationMustHaveIDs: FakeGetTruncationMustHaveIDs
 
@@ -82,7 +84,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
 
         localUserSettingsFlow = MutableStateFlow(value = LocalUserSettings())
 
-        getSettingsTelemetrySnapshotDimensions = GetSettingsTelemetrySnapshotDimensions(
+        getSettingsTelemetryHeartbeatDimensions = GetSettingsTelemetryHeartbeatDimensions(
             appIconManager = mockAppIconManager,
             connectivityMonitor = mockConnectivityMonitor,
             commonDimensions = FakeCommonDimensions(dimensions = mapOf("user_tier" to userTier)),
@@ -120,7 +122,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
         ).forEach { (appIcon, expectedDimensionValue) ->
             every { mockAppIconManager.getCurrentIconData() } returns appIcon
 
-            val dimensions = getSettingsTelemetrySnapshotDimensions()
+            val dimensions = getSettingsTelemetryHeartbeatDimensions()
 
             assertEquals(expectedDimensionValue, dimensions[dimension])
         }
@@ -137,7 +139,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
         ).forEach { (defaultConnection, expectedDimensionValue) ->
             every { mockObserveDefaultConnection() } returns MutableStateFlow(value = defaultConnection)
 
-            val dimensions = getSettingsTelemetrySnapshotDimensions()
+            val dimensions = getSettingsTelemetryHeartbeatDimensions()
 
             assertEquals(expectedDimensionValue, dimensions[dimension])
         }
@@ -154,7 +156,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
         ).forEach { (isPrivateDnsActive, expectedDimensionValue) ->
             every { mockConnectivityMonitor.isPrivateDnsActive } returns MutableStateFlow(isPrivateDnsActive)
 
-            val dimensions = getSettingsTelemetrySnapshotDimensions()
+            val dimensions = getSettingsTelemetryHeartbeatDimensions()
 
             assertEquals(expectedDimensionValue, dimensions[dimension])
         }
@@ -175,7 +177,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
         ).forEach { (widgetCount, expectedDimensionValue) ->
             every { mockWidgetTracker.widgetCount } returns MutableStateFlow(value = widgetCount)
 
-            val dimensions = getSettingsTelemetrySnapshotDimensions()
+            val dimensions = getSettingsTelemetryHeartbeatDimensions()
 
             assertEquals(expectedDimensionValue, dimensions[dimension])
         }
@@ -194,7 +196,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
         ).forEach { (widgetType, expectedDimensionValue) ->
             coEvery { mockWidgetTracker.firstWidgetType() } returns widgetType
 
-            val dimensions = getSettingsTelemetrySnapshotDimensions()
+            val dimensions = getSettingsTelemetryHeartbeatDimensions()
 
             assertEquals(expectedDimensionValue, dimensions[dimension])
         }
@@ -213,7 +215,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
         ).forEach { (widgetType, expectedDimensionValue) ->
             coEvery { mockWidgetTracker.firstWidgetType() } returns widgetType
 
-            val dimensions = getSettingsTelemetrySnapshotDimensions()
+            val dimensions = getSettingsTelemetryHeartbeatDimensions()
 
             assertEquals(expectedDimensionValue, dimensions[dimension])
         }
@@ -224,7 +226,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
         val dimension = "server_list_truncation_protected_ids_count"
         isServerListTruncationEnabledFlow.value = false
 
-        val dimensions = getSettingsTelemetrySnapshotDimensions()
+        val dimensions = getSettingsTelemetryHeartbeatDimensions()
 
         assertNull(dimensions[dimension])
     }
@@ -245,7 +247,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
         ).forEach { (truncatedIds, expectedDimensionValue) ->
             getTruncationMustHaveIDs.set(newTruncationIds = truncatedIds)
 
-            val dimensions = getSettingsTelemetrySnapshotDimensions()
+            val dimensions = getSettingsTelemetryHeartbeatDimensions()
 
             assertEquals(expectedDimensionValue, dimensions[dimension])
         }
@@ -262,7 +264,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
         ).forEach { (themeType, expectedDimensionValue) ->
             localUserSettingsFlow.value = LocalUserSettings(theme = themeType)
 
-            val dimensions = getSettingsTelemetrySnapshotDimensions()
+            val dimensions = getSettingsTelemetryHeartbeatDimensions()
 
             assertEquals(expectedDimensionValue, dimensions[dimension])
         }
@@ -283,7 +285,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
                 lanConnectionsAllowDirect = lanMode.second,
             )
 
-            val dimensions = getSettingsTelemetrySnapshotDimensions()
+            val dimensions = getSettingsTelemetryHeartbeatDimensions()
 
             assertEquals(expectedDimensionValue, dimensions[dimension])
         }
@@ -299,7 +301,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
         ).forEach { (isIPV6Enabled, expectedDimensionValue) ->
             localUserSettingsFlow.value = LocalUserSettings(ipV6Enabled = isIPV6Enabled)
 
-            val dimensions = getSettingsTelemetrySnapshotDimensions()
+            val dimensions = getSettingsTelemetryHeartbeatDimensions()
 
             assertEquals(expectedDimensionValue, dimensions[dimension])
         }
@@ -323,7 +325,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
                 )
             )
 
-            val dimensions = getSettingsTelemetrySnapshotDimensions()
+            val dimensions = getSettingsTelemetryHeartbeatDimensions()
 
             assertEquals(expectedDimensionValue, dimensions[dimension])
         }
@@ -344,7 +346,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
                 customDns = CustomDnsSettings(rawDnsList = rawDnsList)
             )
 
-            val dimensions = getSettingsTelemetrySnapshotDimensions()
+            val dimensions = getSettingsTelemetryHeartbeatDimensions()
 
             assertEquals(expectedDimensionValue, dimensions[dimension])
         }
@@ -363,7 +365,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
                 customDns = CustomDnsSettings(rawDnsList = rawDnsList)
             )
 
-            val dimensions = getSettingsTelemetrySnapshotDimensions()
+            val dimensions = getSettingsTelemetryHeartbeatDimensions()
 
             assertEquals(expectedDimensionValue, dimensions[dimension])
         }
@@ -371,7 +373,7 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
 
     @Test
     fun `WHEN providing dimensions THEN common dimensions are added`() = testScope.runTest {
-        val dimensions = getSettingsTelemetrySnapshotDimensions()
+        val dimensions = getSettingsTelemetryHeartbeatDimensions()
 
         assertEquals(userTier, dimensions[CommonDimensions.Key.USER_TIER.reportedName])
     }
@@ -384,8 +386,117 @@ class GetSettingsTelemetrySnapshotDimensionsTests {
         ).forEach { (isEnabled, expectedValue) ->
             localUserSettingsFlow.value = LocalUserSettings(tvAutoConnectOnBoot = isEnabled)
 
-            val dimensions = getSettingsTelemetrySnapshotDimensions()
+            val dimensions = getSettingsTelemetryHeartbeatDimensions()
             assertEquals(expectedValue, dimensions["is_auto_connect_enabled"])
+        }
+    }
+
+    @Test
+    fun `GIVEN split tunneling enabled options WHEN providing dimensions THEN dimension is set`() = testScope.runTest {
+        val dimension = "is_split_tunneling_enabled"
+
+        listOf(
+            true to "true",
+            false to "false",
+        ).forEach { (isSplitTunnelingEnabled, expectedDimensionValue) ->
+            localUserSettingsFlow.value = LocalUserSettings(
+                splitTunneling = SplitTunnelingSettings(isEnabled = isSplitTunnelingEnabled),
+            )
+
+            val dimensions = getSettingsTelemetryHeartbeatDimensions()
+
+            assertEquals(expectedDimensionValue, dimensions[dimension])
+        }
+    }
+
+    @Test
+    fun `GIVEN split tunneling mode WHEN providing dimensions THEN dimension is set`() = testScope.runTest {
+        val dimension = "split_tunneling_mode"
+
+        listOf(true, false).forEach { isSplitTunnelingEnabled ->
+            listOf(
+                SplitTunnelingMode.EXCLUDE_ONLY to "exclude",
+                SplitTunnelingMode.INCLUDE_ONLY to "include",
+            ).forEach { (splitTunnelingMode, expectedDimensionValue) ->
+                localUserSettingsFlow.value = LocalUserSettings(
+                    splitTunneling = SplitTunnelingSettings(
+                        isEnabled = isSplitTunnelingEnabled,
+                        mode = splitTunnelingMode
+                    ),
+                )
+
+                val dimensions = getSettingsTelemetryHeartbeatDimensions()
+
+                assertEquals(expectedDimensionValue, dimensions[dimension])
+            }
+        }
+    }
+
+    @Test
+    fun `GIVEN split tunneling mode AND apps list WHEN providing dimensions THEN dimension is set`() = testScope.runTest {
+        val dimension = "split_tunneling_apps_count"
+
+        listOf(true, false).forEach { isSplitTunnelingEnabled ->
+            SplitTunnelingMode.entries.forEach { splitTunnelingMode ->
+                listOf(
+                    emptyList<String>() to "0",
+                    (1..1).map(Int::toString).toList() to "1",
+                    (1..2).map(Int::toString).toList() to "2-4",
+                    (1..4).map(Int::toString).toList() to "2-4",
+                    (1..5).map(Int::toString).toList() to "5-9",
+                    (1..9).map(Int::toString).toList() to "5-9",
+                    (1..10).map(Int::toString).toList() to "10-19",
+                    (1..19).map(Int::toString).toList() to "10-19",
+                    (1..20).map(Int::toString).toList() to ">=20",
+                ).forEach { (splitTunnelingApps, expectedDimensionValue) ->
+                    localUserSettingsFlow.value = LocalUserSettings(
+                        splitTunneling = SplitTunnelingSettings(
+                            isEnabled = isSplitTunnelingEnabled,
+                            mode = splitTunnelingMode,
+                            excludedApps = splitTunnelingApps,
+                            includedApps = splitTunnelingApps,
+                        ),
+                    )
+
+                    val dimensions = getSettingsTelemetryHeartbeatDimensions()
+
+                    assertEquals(expectedDimensionValue, dimensions[dimension])
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `GIVEN split tunneling mode AND IPs list WHEN providing dimensions THEN dimension is set`() = testScope.runTest {
+        val dimension = "split_tunneling_ips_count"
+
+        listOf(true, false).forEach { isSplitTunnelingEnabled ->
+            SplitTunnelingMode.entries.forEach { splitTunnelingMode ->
+                listOf(
+                    emptyList<String>() to "0",
+                    (1..1).map(Int::toString).toList() to "1",
+                    (1..2).map(Int::toString).toList() to "2-4",
+                    (1..4).map(Int::toString).toList() to "2-4",
+                    (1..5).map(Int::toString).toList() to "5-9",
+                    (1..9).map(Int::toString).toList() to "5-9",
+                    (1..10).map(Int::toString).toList() to "10-19",
+                    (1..19).map(Int::toString).toList() to "10-19",
+                    (1..20).map(Int::toString).toList() to ">=20",
+                ).forEach { (splitTunnelingIps, expectedDimensionValue) ->
+                    localUserSettingsFlow.value = LocalUserSettings(
+                        splitTunneling = SplitTunnelingSettings(
+                            isEnabled = isSplitTunnelingEnabled,
+                            mode = splitTunnelingMode,
+                            excludedIps = splitTunnelingIps,
+                            includedIps = splitTunnelingIps,
+                        ),
+                    )
+
+                    val dimensions = getSettingsTelemetryHeartbeatDimensions()
+
+                    assertEquals(expectedDimensionValue, dimensions[dimension])
+                }
+            }
         }
     }
 
