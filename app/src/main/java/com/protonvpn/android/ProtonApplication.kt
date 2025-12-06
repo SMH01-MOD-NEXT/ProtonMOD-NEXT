@@ -84,7 +84,6 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
-import go.Seq
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.asCoroutineDispatcher
 import me.proton.core.accountmanager.data.AccountStateHandler
@@ -177,9 +176,6 @@ open class ProtonApplication : Application() {
             ProtonLogger.log(AppProcessStart, "version: " + BuildConfig.VERSION_NAME)
 
             initNotificationChannel(this)
-
-            // Initialize go-libraries early
-            Seq.touch()
 
             CoreLogger.set(VpnCoreLogger())
         }

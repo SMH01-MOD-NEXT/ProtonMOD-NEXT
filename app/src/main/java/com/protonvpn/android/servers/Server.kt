@@ -62,7 +62,7 @@ data class Server(
 
     @Serializable(with = VpnIntToBoolSerializer::class)
     @SerialName(value = "Status")
-    private val isOnline: Boolean,
+    val rawIsOnline: Boolean,
 
     @SerialName(value = "IsVisible")
     val isVisible: Boolean = true,
@@ -71,7 +71,7 @@ data class Server(
     @Transient
     val online: Boolean
         get() {
-            return isOnline && connectingDomains.any { it.isOnline }
+            return rawIsOnline && connectingDomains.any { it.isOnline }
         }
 
     val isTor get() = features.hasFlag(SERVER_FEATURE_TOR)
@@ -179,7 +179,7 @@ fun LogicalServerV1.toServer() = Server(
     translations = translations,
     rawGatewayName = rawGatewayName,
     score = score,
-    isOnline = isOnline,
+    rawIsOnline = isOnline,
     isVisible = true,
 )
 
@@ -204,7 +204,7 @@ fun LogicalServer.toPartialServer() = Server(
     // The following values are fetched separately.
     load = 100f,
     score = 1_000_000.0,
-    isOnline = false,
+    rawIsOnline = true, // Must be true, otherwise will never be set online.
     isVisible = false,
 )
 
