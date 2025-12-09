@@ -167,7 +167,7 @@ jobs:
             MESSAGE="🚀 <b>ProtonMOD-Next Build</b>
 
           $TAG_INFO
-          📝 Latest commit: de>$CURRENT_COMMIT</code>
+          📝 Latest commit: <code>$CURRENT_COMMIT</code>
           👤 Author: $COMMIT_AUTHOR
           📅 Date: $COMMIT_DATE
           🔧 Branch: ${{ github.ref_name }}
@@ -178,7 +178,7 @@ jobs:
             MESSAGE="🚀 <b>ProtonMOD-Next Build</b>
 
           $TAG_INFO
-          📝 Latest commit: de>$CURRENT_COMMIT</code>
+          📝 Latest commit: <code>$CURRENT_COMMIT</code>
           👤 Author: $COMMIT_AUTHOR
           📅 Date: $COMMIT_DATE
           🔧 Branch: ${{ github.ref_name }}
