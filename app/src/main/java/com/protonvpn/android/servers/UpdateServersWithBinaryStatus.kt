@@ -31,6 +31,7 @@ import com.protonvpn.android.utils.stacktraceMessage
 import dagger.Reusable
 import io.sentry.Sentry
 import uniffi.proton_vpn_binary_status.computeLoadsUniffi
+import java.util.Locale
 import javax.inject.Inject
 import uniffi.proton_vpn_binary_status.Location as UniffiLocation
 import uniffi.proton_vpn_binary_status.Logical as UniffiLogical
@@ -64,12 +65,16 @@ class UpdateServersWithBinaryStatusImpl @Inject constructor(
         }
 
         return {
+            val rawCountry = userCountryIpBased()?.countryCode
+            val normalizedCountry = rawCountry?.take(2)?.uppercase(Locale.ROOT)
+
             val loads = computeLoadsUniffi(
                 logicals = uniffiLogicals,
                 statusFile = statusData,
                 userLocation = getLastKnownIpLocation(),
-                userCountry = userCountryIpBased()?.countryCode,
+                userCountry = normalizedCountry
             )
+
             if (loads.size == serversToUpdate.size) {
                 serversToUpdate.zip(loads) { server, load ->
                     // Status update doesn't include physical servers, it's not safe to go from
