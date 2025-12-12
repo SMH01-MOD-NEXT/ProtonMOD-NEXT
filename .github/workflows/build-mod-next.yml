@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - 'protonmod-next'  # Trigger on commits to main development branch
-    tags:
-      - '*'  # Trigger on version tags like 1.0.0, 2.1.3, etc.
-
   workflow_dispatch:  # Allow manual workflow execution from GitHub UI
 
 jobs:
