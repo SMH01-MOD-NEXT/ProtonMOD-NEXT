@@ -28,5 +28,5 @@ enum class NetShieldAvailability {
 
 fun VpnUser?.getNetShieldAvailability() = when {
     this == null || isFreeUser -> NetShieldAvailability.UPGRADE_VPN_PLUS
-    else -> NetShieldAvailability.UPGRADE_VPN_PLUS
+    else -> NetShieldAvailability.AVAILABLE
 }
