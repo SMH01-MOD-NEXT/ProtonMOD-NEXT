@@ -4,10 +4,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.json.JSONArray
 import org.json.JSONObject
 import java.net.Proxy
-import java.util.Locale
 
 data class UserLocation(
     val ipAddress: String,
@@ -19,7 +17,6 @@ data class UserLocation(
 
 /**
  * Получает реальное местоположение пользователя по IP-адресу, в обход любых прокси и VPN.
- * Также определяет язык системы и получает название страны на этом языке.
  *
  * @return Объект [UserLocation] с данными о местоположении или null в случае ошибки.
  */
@@ -43,43 +40,21 @@ suspend fun fetchRealLocation(): UserLocation? = withContext(Dispatchers.IO) {
                     val connection = json.optJSONObject("connection")
 
                     val ip = json.optString("ip", "")
-                    val rawCountryName = json.optString("country", "Unknown")
                     val countryCode = json.optString("country_code", "")
                     val isp = connection?.optString("isp", "Unknown ISP") ?: "Unknown ISP"
                     val lat = json.optDouble("latitude").toFloat()
                     val lon = json.optDouble("longitude").toFloat()
 
-                    // --- НОВЫЙ НАДЁЖНЫЙ МЕТОД ПОЛУЧЕНИЯ НАЗВАНИЯ СТРАНЫ ---
-                    // Получаем локализованное название страны из её кода (например, "RU" -> "Россия").
-                    // Это работает без внешних сервисов перевода.
-                    val countryName = if (countryCode.isNotEmpty()) {
-                        try {
-                            val sourceLocale = Locale("", countryCode) // Локаль на основе кода страны
-                            val targetLocale = Locale.getDefault()     // Локаль системы пользователя
-                            sourceLocale.getDisplayCountry(targetLocale)
-                        } catch (e: Exception) {
-                            rawCountryName // В случае ошибки возвращаем английское название
-                        }
-                    } else {
-                        rawCountryName // Если код страны не пришёл, используем английское название
+                    // Используем двухбуквенный код страны, если он доступен
+                    if (countryCode.isNotEmpty()) {
+                        return@withContext UserLocation(
+                            ipAddress = ip,
+                            country = countryCode,
+                            isp = isp,
+                            latitude = lat,
+                            longitude = lon
+                        )
                     }
-
-
-                    // Форматируем название страны: первая буква каждого слова заглавная, остальные строчные.
-                    // Например: "UNITED KINGDOM" -> "United Kingdom", "RUSSIA" -> "Russia"
-                    val formattedCountry = countryName.split(" ").joinToString(" ") { word ->
-                        word.lowercase(Locale.getDefault()).replaceFirstChar {
-                            if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
-                        }
-                    }
-
-                    return@withContext UserLocation(
-                        ipAddress = ip,
-                        country = formattedCountry,
-                        isp = isp,
-                        latitude = lat,
-                        longitude = lon
-                    )
                 }
             }
         }
@@ -118,4 +93,3 @@ suspend fun fetchRealIp(): String? = withContext(Dispatchers.IO) {
     }
     null
 }
-
