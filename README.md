@@ -1,2 +1,2 @@
 # ProtonMOD-NEXT
-Redirect to new repo
+New repo - https://github.com/SMH01-MOD-NEXT/ProtonVPN-Next
